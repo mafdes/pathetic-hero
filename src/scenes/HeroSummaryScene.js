@@ -1,6 +1,7 @@
 /**
  * HeroSummaryScene.js — Ficha del Héroe y Antesala de la Mazmorra (720×1280 HD Vertical)
  * Muestra el resumen oficial del héroe registrado: Nombre definitivo, Clase asignada, Atributos y Veredicto.
+ * Incluye modal "¡PRÓXIMAMENTE! Fase 2D RPG" al pulsar "¡ENTRAR EN LA MAZMORRA ►!".
  */
 
 import * as Phaser from "phaser";
@@ -11,6 +12,7 @@ import {
 import { CharacterSheet } from "../systems/CharacterSheet.js";
 import { SaveManager } from "../systems/SaveManager.js";
 import { CLASS_TIERS } from "../data/classes.js";
+import { DialogBox } from "../ui/DialogBox.js";
 import { PixelButton } from "../ui/PixelButton.js";
 import { getVerdict } from "../utils/helpers.js";
 
@@ -26,6 +28,27 @@ export class HeroSummaryScene extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor(COLORS.BG_DARK);
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
+
+    this._dialog = new DialogBox(this);
+
+    // Escuchadores de avance para el cuadro modal
+    this.input.on("pointerdown", () => {
+      if (this._dialog.isVisible()) {
+        this._dialog.advance();
+      }
+    });
+
+    this.input.keyboard?.on("keydown-SPACE", () => {
+      if (this._dialog.isVisible()) {
+        this._dialog.advance();
+      }
+    });
+
+    this.input.keyboard?.on("keydown-ENTER", () => {
+      if (this._dialog.isVisible()) {
+        this._dialog.advance();
+      }
+    });
 
     this._renderUI();
   }
@@ -133,7 +156,9 @@ export class HeroSummaryScene extends Phaser.Scene {
 
     // ── BOTÓN PRINCIPAL DE ENTRADA A LA MAZMORRA ────────────────────────────
     const playBtn = new PixelButton(this, cx, H - 150, "¡ENTRAR EN LA MAZMORRA ►!", () => {
-      this._enterDungeon();
+      if (!this._dialog.isVisible()) {
+        this._enterDungeon();
+      }
     }, { width: 580, height: 90, fontSize: "22px" });
 
     this._container.add(playBtn._bg);
@@ -142,7 +167,9 @@ export class HeroSummaryScene extends Phaser.Scene {
 
     // Botón Cambiar Clase
     const changeClassBtn = new PixelButton(this, cx, H - 55, "< CAMBIAR CLASE", () => {
-      this.scene.start(SCENES.CLASS_SELECTION);
+      if (!this._dialog.isVisible()) {
+        this.scene.start(SCENES.CLASS_SELECTION);
+      }
     }, { width: 360, height: 56, fontSize: "15px" });
 
     this._container.add(changeClassBtn._bg);
@@ -171,10 +198,12 @@ export class HeroSummaryScene extends Phaser.Scene {
 
   _enterDungeon() {
     SaveManager.save(this.sheet);
-    this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
-    this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
-      // Transición hacia la aventura / fase de juego 2D RPG
-      this.scene.start(SCENES.GUILD_REPORT);
-    });
+    const clsName = this._getHeroClassData(this.sheet.heroClass).name;
+
+    this._dialog.show(
+      `¡PRÓXIMAMENTE!\n\nFASE 2D RPG (v0.3)\n\nEl Tribunal del Gremio está limpiando las trágicas trampas de la mazmorra.\n\n¡Tu héroe "${this.sheet.name}" (${clsName}) aguarda victorioso en la antesala!`,
+      null,
+      "Examinador Rotval"
+    );
   }
 }
