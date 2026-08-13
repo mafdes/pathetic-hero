@@ -5,6 +5,7 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    host: true,   // Escucha en todas las interfaces → accesible desde móvil en misma red
   },
   build: {
     outDir: "dist",

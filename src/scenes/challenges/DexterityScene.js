@@ -124,10 +124,11 @@ export class DexterityScene extends Phaser.Scene {
       speaker: "Examinador Rotval",
     });
 
-    // ── Input ─────────────────────────────────────────────────────────────────
-    this.input.keyboard?.on("keydown-SPACE", () => this._onAction());
-    this.input.keyboard?.on("keydown-Z",     () => this._onAction());
-    this.input.on("pointerdown",             () => this._onAction());
+    // Input: si el diálogo está activo, cualquier tecla/click lo avanza
+    this.input.keyboard?.on("keydown-SPACE", () => this._handleInput());
+    this.input.keyboard?.on("keydown-Z",     () => this._handleInput());
+    this.input.keyboard?.on("keydown-ENTER", () => this._handleInput());
+    this.input.on("pointerdown",             () => this._handleInput());
 
     this.time.delayedCall(400, () => this._startLevel());
   }
@@ -191,8 +192,17 @@ export class DexterityScene extends Phaser.Scene {
     this._indicator.setX(this._indicatorX);
   }
 
+  // Punto de entrada único para cualquier acción del jugador
+  _handleInput() {
+    if (this._dialog.isVisible()) {
+      this._dialog.advance();
+      return;
+    }
+    this._onAction();
+  }
+
   _onAction() {
-    if (!this._alive || this._inputCooldown || this._dialog.isVisible()) return;
+    if (!this._alive || this._inputCooldown) return;
     this._inputCooldown = true;
     this._showFeedback(this._isInGoldZone());
   }

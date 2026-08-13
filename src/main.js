@@ -24,9 +24,8 @@ const config = {
   height: BASE_HEIGHT,         // 180px
   backgroundColor: "#0d0613",
   parent: "game-container",
-  pixelArt: true,              // Desactiva antialiasing para pixel art nítido
-  antialias: false,
-  roundPixels: true,           // Evita blurring en posiciones subpíxel
+  // pixelArt: true se añadirá cuando tengamos sprites reales.
+  // Con texto CSS no usar nearest-neighbor global o queda horrible.
   scale: {
     mode: Phaser.Scale.FIT,    // Escala manteniendo relación de aspecto
     autoCenter: Phaser.Scale.CENTER_BOTH,
