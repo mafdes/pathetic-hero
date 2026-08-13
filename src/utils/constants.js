@@ -4,10 +4,9 @@
  */
 
 // ─── Resolución Base ────────────────────────────────────────────────────────
-// 960×540 es el canvas interno. Phaser lo escala con FIT para llenar la pantalla.
-// Los sprites pixel art se dibujan a escala ×3 (diseñados en 320×180 lógicos).
-export const BASE_WIDTH = 960;
-export const BASE_HEIGHT = 540;
+// 540×960 es el canvas interno en orientación VERTICAL (Portrait).
+export const BASE_WIDTH = 540;
+export const BASE_HEIGHT = 960;
 
 // ─── Paleta de Colores ───────────────────────────────────────────────────────
 export const COLORS = {

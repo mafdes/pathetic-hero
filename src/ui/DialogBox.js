@@ -1,5 +1,5 @@
 /**
- * DialogBox.js — Cuadro de diálogo estilo RPG con efecto typewriter
+ * DialogBox.js — Cuadro de diálogo estilo RPG con efecto typewriter (540×960 Vertical)
  */
 
 import { COLORS, FONTS, FONT_SIZES, TIMING, DEPTHS } from "../utils/constants.js";
@@ -10,10 +10,10 @@ export class DialogBox {
     const W = scene.scale.width;
     const H = scene.scale.height;
 
-    const x = options.x ?? 16;
-    const w = options.width ?? W - 32;
-    const h = options.height ?? 120;
-    const y = options.y ?? H - h - 12;
+    const x = options.x ?? 20;
+    const w = options.width ?? W - 40;
+    const h = options.height ?? 200;
+    const y = options.y ?? H - h - 20;
 
     this._onComplete = null;
     this._typeTimer = null;
@@ -24,7 +24,7 @@ export class DialogBox {
 
     // ── Fondo del panel ─────────────────────────────────────────────────────
     this._bg = scene.add
-      .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.92)
+      .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.94)
       .setOrigin(0, 0)
       .setDepth(DEPTHS.DIALOG)
       .setStrokeStyle(2, COLORS.GOLD)
@@ -32,9 +32,9 @@ export class DialogBox {
 
     // ── Nombre del hablante ──────────────────────────────────────────────────
     this._speakerText = scene.add
-      .text(x + 16, y - 22, "", {
+      .text(x + 16, y - 24, "", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: FONT_SIZES.SMALL,
+        fontSize: "14px",
         color: "#d4a017",
         resolution: 2,
       })
@@ -43,9 +43,9 @@ export class DialogBox {
 
     // ── Texto principal con typewriter ───────────────────────────────────────
     this._bodyText = scene.add
-      .text(x + 16, y + 16, "", {
+      .text(x + 16, y + 20, "", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: FONT_SIZES.SMALL,
+        fontSize: "14px",
         color: "#f0e6d3",
         wordWrap: { width: w - 32 },
         resolution: 2,
@@ -58,7 +58,7 @@ export class DialogBox {
     this._continueIndicator = scene.add
       .text(x + w - 32, y + h - 28, "▼", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: FONT_SIZES.SMALL,
+        fontSize: "14px",
         color: "#d4a017",
         resolution: 2,
       })

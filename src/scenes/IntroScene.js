@@ -1,5 +1,5 @@
 /**
- * IntroScene.js — Pantalla de créditos narrativa (960×540)
+ * IntroScene.js — Pantalla de créditos narrativa (540×960 Vertical)
  */
 
 import * as Phaser from "phaser";
@@ -38,24 +38,24 @@ export class IntroScene extends Phaser.Scene {
         .setDisplaySize(W, H).setAlpha(0.35).setDepth(DEPTHS.BG);
     }
 
-    // Texto principal centrado con "Press Start 2P" a 18px y spacing compacto (6px)
-    this._textObject = this.add.text(W / 2, H / 2 - 20, "", {
+    // Texto narrativo vertical centrado en pantalla (540px ancho, wordWrap: 460px)
+    this._textObject = this.add.text(W / 2, H / 2 - 40, "", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "18px",
+      fontSize: "16px",
       color: "#f0e6d3",
       resolution: 2,
       align: "center",
-      wordWrap: { width: 800 },
-      lineSpacing: 6,
+      wordWrap: { width: 460 },
+      lineSpacing: 10,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
     // Hint "SKIP"
-    this._skipHint = this.add.text(W - 24, H - 24, "[ CUALQUIER TECLA — SKIP ]", {
+    this._skipHint = this.add.text(W / 2, H - 40, "[ CUALQUIER TECLA — SKIP ]", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.SMALL,
+      fontSize: "11px",
       color: "#6a4e8a",
       resolution: 2,
-    }).setOrigin(1, 1).setDepth(DEPTHS.UI);
+    }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
     this.tweens.add({
       targets: this._skipHint,
@@ -124,9 +124,12 @@ export class IntroScene extends Phaser.Scene {
 
     const W = this.scale.width;
     const H = this.scale.height;
-    const cont = this.add.text(W / 2, H - 44, "— PULSA PARA CONTINUAR —", {
+
+    this._skipHint.setVisible(false);
+
+    const cont = this.add.text(W / 2, H - 60, "— PULSA PARA CONTINUAR —", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.BODY,
+      fontSize: "13px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);

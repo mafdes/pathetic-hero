@@ -1,5 +1,5 @@
 /**
- * PixelButton.js — Botón reutilizable con estética pixel art retro (960×540)
+ * PixelButton.js — Botón reutilizable con estética pixel art retro (540×960 Vertical)
  */
 
 import { COLORS, FONTS, FONT_SIZES, DEPTHS } from "../utils/constants.js";
@@ -12,8 +12,8 @@ export class PixelButton {
    * @param {string} label
    * @param {Function} onClick
    * @param {object} [options]
-   * @param {number} [options.width=280]
-   * @param {number} [options.height=44]
+   * @param {number} [options.width=360]
+   * @param {number} [options.height=54]
    * @param {string} [options.fontSize="16px"]
    * @param {boolean} [options.selected=false]
    */
@@ -23,13 +23,13 @@ export class PixelButton {
     this._selected = options.selected ?? false;
     this._enabled = true;
 
-    const w = options.width  ?? 280;
-    const h = options.height ?? 44;
+    const w = options.width  ?? 360;
+    const h = options.height ?? 54;
     const fs = options.fontSize ?? FONT_SIZES.BODY;
 
     // ── Fondo ────────────────────────────────────────────────────────────────
     this._bg = scene.add
-      .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.92)
+      .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.94)
       .setDepth(DEPTHS.UI)
       .setStrokeStyle(2, COLORS.GOLD_DARK)
       .setInteractive({ useHandCursor: true });
@@ -47,7 +47,7 @@ export class PixelButton {
 
     // ── Cursor ► ─────────────────────────────────────────────────────────────
     this._cursor = scene.add
-      .text(x - w / 2 + 12, y, "►", {
+      .text(x - w / 2 + 16, y, "►", {
         fontFamily: FONTS.PRIMARY,
         fontSize: fs,
         color: "#d4a017",

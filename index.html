@@ -46,77 +46,9 @@
         object-fit: contain;
         image-rendering: auto;
       }
-
-      /* Pantalla de rotación — solo visible en móvil portrait */
-      #rotate-screen {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: #0d0613;
-        z-index: 9999;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 24px;
-        font-family: 'Press Start 2P', monospace;
-        color: #f0e6d3;
-        text-align: center;
-        padding: 32px;
-      }
-
-      /* hover:none = dispositivo sin ratón = táctil */
-      @media (orientation: portrait) and (hover: none) {
-        #rotate-screen  { display: flex; }
-        #game-container { display: none; }
-      }
-
-      #rotate-screen .rotate-title {
-        font-size: 14px;
-        color: #d4a017;
-        line-height: 2;
-      }
-
-      #rotate-screen .rotate-subtitle {
-        font-size: 10px;
-        color: #6a4e8a;
-        line-height: 2;
-      }
-
-      /* Flecha de rotación animada */
-      #rotate-screen .rotate-arrow {
-        font-size: 48px;
-        animation: spin-cw 2s ease-in-out infinite;
-        display: inline-block;
-        color: #d4a017;
-      }
-
-      @keyframes spin-cw {
-        0%   { transform: rotate(0deg); }
-        40%  { transform: rotate(90deg); }
-        60%  { transform: rotate(90deg); }
-        100% { transform: rotate(90deg) scale(1.1); }
-      }
-
-      canvas {
-        display: block;
-        /* image-rendering: pixelated se activará cuando usemos sprites pixel art reales.
-           A 960x540 con texto CSS, nearest-neighbor hace los textos ilegibles. */
-      }
     </style>
   </head>
   <body>
-    <!-- Pantalla de rotación: visible solo en móvil portrait via CSS media query -->
-    <div id="rotate-screen">
-      <div class="rotate-arrow">&#8635;</div>
-      <p class="rotate-title">GIRA EL<br>DISPOSITIVO</p>
-      <p class="rotate-subtitle">
-        El Gremio de Héroes<br>
-        no atiende candidatos<br>
-        de lado.<br><br>
-        Es una norma.<br>
-        Página 347 del reglamento.
-      </p>
-    </div>
     <!-- Preloader de fuente HTML para garantizar que WOFF2 esté en memoria para Canvas 2D -->
     <div style="font-family: 'Press Start 2P'; position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none;">.</div>
     <div id="game-container"></div>

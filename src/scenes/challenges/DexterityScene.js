@@ -1,13 +1,5 @@
 /**
- * DexterityScene.js — Prueba de Destreza del Gremio (960×540)
- *
- * Mecánica base: barra horizontal con indicador en movimiento.
- * El jugador pulsa cuando el indicador cruce la zona dorada.
- *
- * INCLUYE:
- * - Reinicio limpio del indicador a la izquierda (barX) al arrancar cada nivel.
- * - Cuenta atrás visual (3... 2... 1... ¡PREPARATE!) antes de iniciar el movimiento.
- * - Sabotajes progresivos del Examinador Rotval a partir de nivel 3.
+ * DexterityScene.js — Prueba de Destreza del Gremio (540×960 Vertical)
  */
 
 import * as Phaser from "phaser";
@@ -36,7 +28,6 @@ const SUCCESS_COMMENTS = [
   "No está mal. Para ser usted.",
 ];
 
-// Avisos de sabotaje — el Examinador anuncia el truco ANTES del nivel
 const SABOTAGE_ANNOUNCEMENTS = {
   3:  "Nivel 3. La diana puede haberse... desplazado ligeramente.\nCosas que pasan.",
   5:  "Nivel 5. Parpadeo de calibración del equipo.\nCompletamente normal. No nos mire así.",
@@ -56,21 +47,18 @@ export class DexterityScene extends Phaser.Scene {
     this._currentLevel = 1;
     this._maxLevels    = 20;
     this._alive        = true;
-    this._inCountdown  = true; // Pausa durante la cuenta atrás
+    this._inCountdown  = true;
     this._inputCooldown = false;
     this._score        = 0;
 
-    // Estado de la zona móvil
     this._zoneT        = 0;
     this._zoneBaseX    = 0;
     this._zoneMoving   = false;
     this._zoneMoveAmp  = 0;
     this._zoneMoveFreq = 0;
 
-    // Estado del parpadeo
     this._blinkTimer   = null;
 
-    // Estado de la ráfaga de velocidad
     this._speedBurstOn = false;
     this._burstTimer   = null;
     this._currentSpeed = 0;
@@ -84,37 +72,38 @@ export class DexterityScene extends Phaser.Scene {
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
     // ── HUD superior ──────────────────────────────────────────────────────────
-    this.add.rectangle(W / 2, 28, W, 56, COLORS.UI_PANEL, 0.9)
+    this.add.rectangle(W / 2, 40, W, 80, COLORS.UI_PANEL, 0.9)
       .setDepth(DEPTHS.UI_BG);
 
-    this.add.text(24, 28, "PRUEBA: DESTREZA", {
+    this.add.text(W / 2, 26, "PRUEBA: DESTREZA", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.BODY,
+      fontSize: "18px",
       color: "#d4a017",
       resolution: 2,
-    }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
+    }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
-    this._levelText = this.add.text(W - 24, 28, "NIVEL  1 / 20", {
+    this._levelText = this.add.text(W / 2, 54, "NIVEL 1 / 20", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.BODY,
+      fontSize: "14px",
       color: "#f0e6d3",
       resolution: 2,
-    }).setOrigin(1, 0.5).setDepth(DEPTHS.UI);
+    }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
     // Instrucción
-    this.add.text(W / 2, 80, "PULSA cuando el cursor cruce la zona dorada", {
+    this.add.text(W / 2, 115, "PULSA cuando el cursor\ncruce la zona dorada", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.SMALL,
+      fontSize: "13px",
       color: "#6a4e8a",
       resolution: 2,
       align: "center",
+      lineSpacing: 6,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // ── Barra de precisión ────────────────────────────────────────────────────
-    const barY = H / 2 - 20;
-    const barW = W - 120;
-    const barH = 42;
-    const barX = 60;
+    // ── Barra de precisión horizontal en vertical canvas ──────────────────────
+    const barY = H / 2 - 60;
+    const barW = W - 60; // 480px ancho en canvas de 540px
+    const barH = 48;
+    const barX = 30;
 
     // Marco
     this.add.rectangle(W / 2, barY, barW, barH, COLORS.BG_STONE, 1)
@@ -131,7 +120,7 @@ export class DexterityScene extends Phaser.Scene {
       .setDepth(DEPTHS.UI).setVisible(false);
 
     // Indicador (cursor móvil)
-    this._indicator = this.add.rectangle(barX, barY, 10, barH, COLORS.WHITE, 1)
+    this._indicator = this.add.rectangle(barX, barY, 12, barH, COLORS.WHITE, 1)
       .setDepth(DEPTHS.UI + 1);
 
     this._barX    = barX;
@@ -141,33 +130,34 @@ export class DexterityScene extends Phaser.Scene {
     this._barMidX = barX + barW / 2;
 
     // Extremos
-    this.add.text(barX - 10, barY, "◄", {
-      fontFamily: FONTS.PRIMARY, fontSize: FONT_SIZES.SMALL, color: "#3d3d6b", resolution: 2,
+    this.add.text(barX - 12, barY, "◄", {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#3d3d6b", resolution: 2,
     }).setOrigin(1, 0.5).setDepth(DEPTHS.UI);
-    this.add.text(barX + barW + 10, barY, "►", {
-      fontFamily: FONTS.PRIMARY, fontSize: FONT_SIZES.SMALL, color: "#3d3d6b", resolution: 2,
+    this.add.text(barX + barW + 12, barY, "►", {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#3d3d6b", resolution: 2,
     }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
 
     // Hint de control
-    this.add.text(W / 2, barY + 52, "[ ESPACIO  /  Z  /  ENTER  /  CLICK ]", {
+    this.add.text(W / 2, barY + 60, "[ ESPACIO / Z / CLICK ]", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.SMALL,
+      fontSize: "12px",
       color: "#5a5a8a",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
     // ── Texto de Cuenta Atrás (3... 2... 1... ¡YA!) ─────────────────────────
-    this._countdownText = this.add.text(W / 2, barY - 60, "", {
+    this._countdownText = this.add.text(W / 2, barY - 70, "", {
       fontFamily: FONTS.PRIMARY,
       fontSize: "36px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI + 2).setVisible(false);
 
-    // ── Diálogo del Examinador ────────────────────────────────────────────────
+    // ── Diálogo del Examinador en la parte inferior ─────────────────────────
     this._dialog = new DialogBox(this, {
-      y: H - 160,
-      height: 140,
+      y: H - 220,
+      height: 200,
+      speaker: "Examinador Rotval",
     });
 
     // ── Input ─────────────────────────────────────────────────────────────────
@@ -219,13 +209,11 @@ export class DexterityScene extends Phaser.Scene {
     const cfg = this._getLevelConfig(this._currentLevel);
     const cx  = this._barMidX;
 
-    // Resetear posición del indicador al inicio de la barra
     this._indicatorX   = this._barX;
     this._indicatorDir = 1;
     this._indicator.setX(this._barX);
     this._indicator.setAlpha(1);
 
-    // Posicionar zona dorada
     this._goldZone.setX(cx).setVisible(true);
     this._goldZone.width = cfg.goldWidth;
 
@@ -235,7 +223,6 @@ export class DexterityScene extends Phaser.Scene {
     this._zoneMoveAmp  = cfg.zoneMoveAmp;
     this._zoneMoveFreq = cfg.zoneMoveFreq;
 
-    // Señuelos
     if (cfg.hasDecoys) {
       const dw = cfg.goldWidth;
       this._decoyLeft.setX(cx - this._barW * 0.30);
@@ -252,7 +239,6 @@ export class DexterityScene extends Phaser.Scene {
     this._currentSpeed  = cfg.speed;
     this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
 
-    // PAUSA DE CUENTA ATRÁS (3... 2... 1... ¡PREPARATE!)
     this._inCountdown = true;
     this._inputCooldown = true;
 
@@ -261,7 +247,6 @@ export class DexterityScene extends Phaser.Scene {
       this._inCountdown   = false;
       this._inputCooldown = false;
 
-      // Iniciar timers de sabotaje una vez terminada la cuenta atrás
       if (cfg.zoneBlink) {
         this._blinkTimer = this.time.addEvent({
           delay: cfg.blinkInterval,
@@ -285,8 +270,6 @@ export class DexterityScene extends Phaser.Scene {
       }
     });
   }
-
-  // ─── Animación de Cuenta Atrás (3... 2... 1... ¡YA!) ──────────────────────
 
   _runCountdown(onComplete) {
     const steps = ["3", "2", "1", "¡YA!"];
@@ -350,7 +333,6 @@ export class DexterityScene extends Phaser.Scene {
 
     const dt = delta / 1000;
 
-    // Mover indicador
     this._indicatorX += this._currentSpeed * this._indicatorDir * dt;
 
     if (this._indicatorX >= this._barX + this._barW - 5) {
@@ -363,7 +345,6 @@ export class DexterityScene extends Phaser.Scene {
 
     this._indicator.setX(this._indicatorX);
 
-    // Mover zona dorada en onda senoidal
     if (this._zoneMoving) {
       this._zoneT += dt;
       const offset = Math.sin(this._zoneT * this._zoneMoveFreq * Math.PI * 2) * this._zoneMoveAmp;
@@ -383,7 +364,7 @@ export class DexterityScene extends Phaser.Scene {
       this._dialog.advance();
       return;
     }
-    if (this._inCountdown) return; // Ignorar inputs durante cuenta atrás
+    if (this._inCountdown) return;
     this._onAction();
   }
 

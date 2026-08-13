@@ -1,5 +1,5 @@
 /**
- * ControlsScene.js — Selector de controles (960×540)
+ * ControlsScene.js — Selector de controles (540×960 Vertical)
  */
 
 import * as Phaser from "phaser";
@@ -29,20 +29,20 @@ export class ControlsScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.BG_DEEP);
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
-    // Panel central
-    this.add.rectangle(W / 2, H / 2, 520, 320, COLORS.UI_PANEL, 0.95)
+    // Panel central vertical
+    this.add.rectangle(W / 2, H / 2, 460, 420, COLORS.UI_PANEL, 0.95)
       .setStrokeStyle(2, COLORS.GOLD_DARK).setDepth(DEPTHS.UI_BG);
 
-    this.add.text(W / 2, H / 2 - 120, "¿CÓMO COMBATES?", {
+    this.add.text(W / 2, H / 2 - 150, "¿CÓMO COMBATES?", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.HEADING,
+      fontSize: "20px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    this.add.text(W / 2, H / 2 - 76, "Elige tu método de entrada", {
+    this.add.text(W / 2, H / 2 - 100, "Elige tu método de entrada", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.SMALL,
+      fontSize: "12px",
       color: "#6a4e8a",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
@@ -50,18 +50,18 @@ export class ControlsScene extends Phaser.Scene {
     new PixelButton(this, W / 2, H / 2 - 20,
       "TECLADO  [ Flechas + Z ]",
       () => this._selectMode(INPUT_MODE.KEYBOARD),
-      { width: 400, height: 52, fontSize: FONT_SIZES.BODY }
+      { width: 380, height: 56, fontSize: "14px" }
     );
 
-    new PixelButton(this, W / 2, H / 2 + 56,
+    new PixelButton(this, W / 2, H / 2 + 60,
       "RATON  [ Click ]",
       () => this._selectMode(INPUT_MODE.MOUSE),
-      { width: 400, height: 52, fontSize: FONT_SIZES.BODY }
+      { width: 380, height: 56, fontSize: "14px" }
     );
 
-    this.add.text(W / 2, H / 2 + 126, "En movil: controles tactiles automaticos", {
+    this.add.text(W / 2, H / 2 + 150, "En móvil: táctil automático", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.TINY,
+      fontSize: "11px",
       color: "#5a5a8a",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
