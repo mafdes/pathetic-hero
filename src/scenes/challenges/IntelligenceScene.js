@@ -1,6 +1,7 @@
 /**
  * IntelligenceScene.js — Prueba de Inteligencia del Gremio (720×1280 HD Vertical)
  * MECÁNICA ORIGINAL: El Archivista Corrupto — Simon Says con 6 Runas, Trampas Rojas, Mezcla, Inversión y Baldosas Boca Abajo.
+ * Con avance de diálogo modal garantizado por click en cualquier punto de la pantalla.
  */
 
 import * as Phaser from "phaser";
@@ -128,7 +129,14 @@ export class IntelligenceScene extends Phaser.Scene {
 
     this._dialog = new DialogBox(this);
 
-    // Entrada Teclado (Números 1 a 6) y Avance Modal
+    // Escuchador global de Click para avanzar el modal de diálogo en cualquier punto
+    this.input.on("pointerdown", () => {
+      if (this._dialog.isVisible()) {
+        this._dialog.advance();
+      }
+    });
+
+    // Entrada Teclado (Números 1 a 6 y Espacio)
     this.input.keyboard?.on("keydown", (evt) => {
       if (this._dialog.isVisible()) {
         this._dialog.advance();
