@@ -47,7 +47,7 @@ export const CSS_COLORS = {
 
 // ─── Tipografía ──────────────────────────────────────────────────────────────
 export const FONTS = {
-  PRIMARY: "Press Start 2P",
+  PRIMARY: '"Press Start 2P"',
   FALLBACK: "monospace",
 };
 

@@ -4,7 +4,7 @@
  */
 
 import * as Phaser from "phaser";
-import { BASE_WIDTH, BASE_HEIGHT, SCENES } from "./utils/constants.js";
+import { BASE_WIDTH, BASE_HEIGHT } from "./utils/constants.js";
 import { BootScene } from "./scenes/BootScene.js";
 import { PreloadScene } from "./scenes/PreloadScene.js";
 import { IntroScene } from "./scenes/IntroScene.js";
@@ -13,6 +13,10 @@ import { OptionsScene } from "./scenes/OptionsScene.js";
 import { ControlsScene } from "./scenes/ControlsScene.js";
 import { GuildReportScene } from "./scenes/GuildReportScene.js";
 import { DexterityScene } from "./scenes/challenges/DexterityScene.js";
+import { ConstitutionScene } from "./scenes/challenges/ConstitutionScene.js";
+import { StrengthScene } from "./scenes/challenges/StrengthScene.js";
+import { AgilityScene } from "./scenes/challenges/AgilityScene.js";
+import { IntelligenceScene } from "./scenes/challenges/IntelligenceScene.js";
 
 /** @type {Phaser.Types.Core.GameConfig} */
 const config = {
@@ -41,6 +45,10 @@ const config = {
     ControlsScene,
     GuildReportScene,
     DexterityScene,
+    ConstitutionScene,
+    StrengthScene,
+    AgilityScene,
+    IntelligenceScene,
   ],
 };
 
