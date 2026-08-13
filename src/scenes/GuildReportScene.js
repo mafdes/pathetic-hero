@@ -1,6 +1,6 @@
 /**
  * GuildReportScene.js — Expediente de Admisión (720×1280 HD Vertical)
- * Incluye botón temporal de autocompletado aleatorio (DEV) y transición a Selección de Clase.
+ * Incluye botón temporal de autocompletado aleatorio (DEV) posicionado abajo y transición a Selección de Clase.
  */
 
 import * as Phaser from "phaser";
@@ -88,23 +88,10 @@ export class GuildReportScene extends Phaser.Scene {
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // ── Botón Temporal de Autocompletado Aleatorio (DEV) ────────────────────
-    const devBtn = this.add.text(W - 40, 160, "[ 🎲 RANDOM DEV ]", {
-      fontFamily: FONTS.PRIMARY,
-      fontSize: "12px",
-      color: "#f0c040",
-      resolution: 2,
-    }).setOrigin(1, 0.5).setDepth(DEPTHS.UI)
-      .setInteractive({ useHandCursor: true });
-
-    devBtn.on("pointerover", () => devBtn.setColor("#ffffff"));
-    devBtn.on("pointerout",  () => devBtn.setColor("#f0c040"));
-    devBtn.on("pointerdown", () => this._fillRandomScores());
-
-    this.add.rectangle(cx, 190, W - 60, 3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
+    this.add.rectangle(cx, 185, W - 60, 3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
 
     // ── Filas de pruebas HD (720px ancho) ─────────────────────────────────
-    const startY = 220;
+    const startY = 210;
     const rowH   = 86;
     const rowW   = W - 60;
     const rowX   = 30;
@@ -175,13 +162,26 @@ export class GuildReportScene extends Phaser.Scene {
       );
     } else {
       const remaining = CHALLENGE_ORDER.filter(id => this.sheet.attributes[id] === null).length;
-      this.add.text(cx, bottomY + 40, `Pruebas pendientes: ${remaining}`, {
+      this.add.text(cx, bottomY + 35, `Pruebas pendientes: ${remaining}`, {
         fontFamily: FONTS.PRIMARY,
         fontSize: "16px",
         color: "#6a4e8a",
         resolution: 2,
       }).setOrigin(0.5).setDepth(DEPTHS.UI);
     }
+
+    // ── Botón Temporal de Autocompletado Aleatorio (DEV) ABAJO ──────────────
+    const devBtn = this.add.text(cx, H - 125, "[ 🎲 AUTO-COMPLETAR PRUEBAS DEV ]", {
+      fontFamily: FONTS.PRIMARY,
+      fontSize: "13px",
+      color: "#d4a017",
+      resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI)
+      .setInteractive({ useHandCursor: true });
+
+    devBtn.on("pointerover", () => devBtn.setColor("#ffffff"));
+    devBtn.on("pointerout",  () => devBtn.setColor("#d4a017"));
+    devBtn.on("pointerdown", () => this._fillRandomScores());
 
     // ── Volver al Menú ────────────────────────────────────────────────────────
     new PixelButton(this, cx, H - 55, "< MENU PRINCIPAL",

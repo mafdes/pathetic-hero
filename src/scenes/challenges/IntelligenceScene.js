@@ -1,7 +1,7 @@
 /**
  * IntelligenceScene.js — Prueba de Inteligencia del Gremio (720×1280 HD Vertical)
  * MECÁNICA ORIGINAL: El Archivista Corrupto — Simon Says con 6 Runas, Trampas Rojas, Mezcla, Inversión y Baldosas Boca Abajo.
- * Con avance de diálogo modal garantizado por click en cualquier punto de la pantalla.
+ * Renderizado de símbolos vectoriales arcanos limpios (sin emojis).
  */
 
 import * as Phaser from "phaser";
@@ -14,12 +14,12 @@ import { getVerdict } from "../../utils/helpers.js";
 const TOTAL_ROUNDS = 20;
 
 const RUNES = [
-  { id: 0, name: "Sol",      icon: "☀️", color: 0xf59e0b },
-  { id: 1, name: "Luna",     icon: "🌙", color: 0x3b82f6 },
-  { id: 2, name: "Estrella", icon: "⭐️", color: 0xef4444 },
-  { id: 3, name: "Ojo",      icon: "👁️", color: 0x10b981 },
-  { id: 4, name: "Gema",     icon: "💎", color: 0x8b5cf6 },
-  { id: 5, name: "Corona",   icon: "👑", color: 0xec4899 },
+  { id: 0, name: "Sol",      color: 0xf59e0b, draw: (gfx) => { gfx.fillStyle(0xf59e0b, 1); gfx.fillCircle(0, 0, 20); gfx.lineStyle(4, 0xfcd34d); gfx.strokeCircle(0, 0, 32); } },
+  { id: 1, name: "Luna",     color: 0x3b82f6, draw: (gfx) => { gfx.fillStyle(0x60a5fa, 1); gfx.fillCircle(-6, 0, 22); gfx.fillStyle(0x0e1424, 1); gfx.fillCircle(4, -4, 20); } },
+  { id: 2, name: "Estrella", color: 0xef4444, draw: (gfx) => { gfx.fillStyle(0xf87171, 1); gfx.fillTriangle(0, -28, -20, 16, 20, 16); gfx.fillTriangle(0, 24, -20, -12, 20, -12); } },
+  { id: 3, name: "Ojo",      color: 0x10b981, draw: (gfx) => { gfx.lineStyle(4, 0x34d399); gfx.strokeEllipse(0, 0, 52, 28); gfx.fillStyle(0x34d399, 1); gfx.fillCircle(0, 0, 10); } },
+  { id: 4, name: "Gema",     color: 0x8b5cf6, draw: (gfx) => { gfx.fillStyle(0xa78bfa, 1); gfx.fillTriangle(0, -28, -24, 0, 24, 0); gfx.fillTriangle(0, 28, -24, 0, 24, 0); } },
+  { id: 5, name: "Corona",   color: 0xec4899, draw: (gfx) => { gfx.fillStyle(0xf472b6, 1); gfx.fillTriangle(-24, 14, -24, -18, 0, 8); gfx.fillTriangle(0, 14, 0, -26, 24, 14); gfx.fillTriangle(24, 14, 24, -18, 0, 8); } },
 ];
 
 const SABOTAGE_ANNOUNCEMENTS = {
@@ -90,7 +90,7 @@ export class IntelligenceScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#60a5fa", resolution: 2, align: "center", lineSpacing: 8, wordWrap: { width: W - 80 },
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // ── Tablero de 6 Baldosas Rúnicas (2 filas x 3 columnas) ────────────────
+    // ── Tablero de 6 Baldosas Rúnicas Vectoriales (2 filas x 3 columnas) ───────
     this._tiles = [];
     const gridCols = 3;
     const gridRows = 2;
@@ -111,12 +111,12 @@ export class IntelligenceScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true })
         .setDepth(DEPTHS.UI);
 
-      const icon = this.add.text(x, y, rune.icon, { fontSize: "54px" })
-        .setOrigin(0.5).setDepth(DEPTHS.UI + 1);
+      const symbolGfx = this.add.graphics({ x, y }).setDepth(DEPTHS.UI + 1);
+      rune.draw(symbolGfx);
 
       bg.on("pointerdown", () => this._onTileClicked(rune.id));
 
-      this._tiles[rune.id] = { bg, icon, rune, x, y };
+      this._tiles[rune.id] = { bg, symbolGfx, rune, x, y };
     });
 
     // Telón Oscuro desde frame 1
@@ -296,14 +296,18 @@ export class IntelligenceScene extends Phaser.Scene {
 
       const tile = this._tiles[runeId];
       tile.bg.setPosition(x, y);
-      tile.icon.setPosition(x, y);
+      tile.symbolGfx.setPosition(x, y);
 
+      tile.symbolGfx.clear();
       if (this._isBoardFaceDown) {
-        tile.icon.setText("❓");
         tile.bg.setStrokeStyle(4, 0x6a4e8a);
+        // Dibujo de reverso de carta arcano misterioso
+        tile.symbolGfx.lineStyle(4, 0x8b5cf6, 1);
+        tile.symbolGfx.strokeRect(-20, -20, 40, 40);
+        tile.symbolGfx.strokeCircle(0, 0, 10);
       } else {
-        tile.icon.setText(tile.rune.icon);
         tile.bg.setStrokeStyle(4, 0x3b82f6);
+        tile.rune.draw(tile.symbolGfx);
       }
     });
   }

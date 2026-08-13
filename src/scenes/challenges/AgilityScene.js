@@ -1,6 +1,7 @@
 /**
  * AgilityScene.js — Prueba de Agilidad del Gremio (720×1280 HD Vertical)
  * MECÁNICA ORIGINAL: Esquiva de barriles en 3 carriles con drifting y sabotajes.
+ * Gráficos vectoriales Phaser integrados (sin emojis).
  */
 
 import * as Phaser from "phaser";
@@ -87,13 +88,21 @@ export class AgilityScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "15px", color: "#d4a017", resolution: 2, align: "center", lineSpacing: 8,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // Jugador (Héroe en la parte inferior)
+    // Jugador (Héroe en la parte inferior dibujado por Vector Graphics)
     this._playerY = H - 180;
-    this._player = this.add.rectangle(this._laneCenters[1], this._playerY, 70, 70, 0x4caf77, 1)
-      .setStrokeStyle(3, 0xffffff).setDepth(DEPTHS.UI + 2);
+    this._playerContainer = this.add.container(this._laneCenters[1], this._playerY)
+      .setDepth(DEPTHS.UI + 2);
 
-    this.add.text(this._laneCenters[1], this._playerY, "🏃", { fontSize: "36px" })
-      .setOrigin(0.5).setDepth(DEPTHS.UI + 3).setName("playerIcon");
+    const playerGfx = this.add.graphics();
+    playerGfx.fillStyle(0x4caf77, 1);
+    playerGfx.fillRoundedRect(-32, -32, 64, 64, 12);
+    playerGfx.lineStyle(3, 0xffffff, 1);
+    playerGfx.strokeRoundedRect(-32, -32, 64, 64, 12);
+    // Escudo/Blasón interno
+    playerGfx.fillStyle(0xd4a017, 1);
+    playerGfx.fillTriangle(0, -18, -16, 12, 16, 12);
+
+    this._playerContainer.add(playerGfx);
 
     // Hint control adaptativo
     const inputMode = this.registry.get("inputMode") ?? "keyboard";
@@ -153,9 +162,7 @@ export class AgilityScene extends Phaser.Scene {
   _movePlayerToLane(lane) {
     this._playerLane = lane;
     const targetX = this._laneCenters[lane];
-    this._player.setX(targetX);
-    const icon = this.children.getByName("playerIcon");
-    if (icon) icon.setX(targetX);
+    this._playerContainer.setX(targetX);
   }
 
   _beginLevel() {
@@ -217,7 +224,6 @@ export class AgilityScene extends Phaser.Scene {
     if (!this._alive) return;
     const level = this._currentLevel;
 
-    // Configuración de oleada de barriles según nivel
     const count = level === 1 ? 1 : level === 2 ? 2 : 3;
     const stagger = Math.max(150, 450 - level * 15);
     const dropDuration = Math.max(700, 1500 - level * 35);
@@ -248,26 +254,41 @@ export class AgilityScene extends Phaser.Scene {
     const startY = 190;
     const endY   = this.scale.height - 80;
 
-    const barrel = this.add.rectangle(startX, startY, 64, 64, 0x884411, 1)
-      .setStrokeStyle(3, 0xd4a017).setDepth(DEPTHS.UI + 1);
+    const barrelContainer = this.add.container(startX, startY).setDepth(DEPTHS.UI + 1);
 
-    const icon = this.add.text(startX, startY, "🛢️", { fontSize: "36px" })
-      .setOrigin(0.5).setDepth(DEPTHS.UI + 2);
+    const barrelGfx = this.add.graphics();
+    // Cuerpo del barril (Madera de roble)
+    barrelGfx.fillStyle(0x733d16, 1);
+    barrelGfx.fillRoundedRect(-34, -34, 68, 68, 8);
+    // Aros de hierro
+    barrelGfx.fillStyle(0x3a3a42, 1);
+    barrelGfx.fillRect(-34, -24, 68, 8);
+    barrelGfx.fillRect(-34, 16, 68, 8);
+    // Remaches de latón
+    barrelGfx.fillStyle(0xd4a017, 1);
+    barrelGfx.fillCircle(-20, -20, 3);
+    barrelGfx.fillCircle(20, -20, 3);
+    barrelGfx.fillCircle(-20, 20, 3);
+    barrelGfx.fillCircle(20, 20, 3);
+    // Borde exterior
+    barrelGfx.lineStyle(3, 0x4a2408, 1);
+    barrelGfx.strokeRoundedRect(-34, -34, 68, 68, 8);
 
-    const barrelObj = { rect: barrel, icon, startLane, endLane, done: false };
+    barrelContainer.add(barrelGfx);
+
+    const barrelObj = { container: barrelContainer, startLane, endLane, done: false };
     this._barrels.push(barrelObj);
 
     this.tweens.add({
-      targets: [barrel, icon],
+      targets: barrelContainer,
       x: endX,
       y: endY,
       duration,
       ease: endLane !== startLane ? "Quad.easeIn" : "Linear",
       onUpdate: () => {
         if (!this._alive || barrelObj.done) return;
-        // Detección de colisión con el jugador (en la zona inferior Y)
-        if (barrel.y >= this._playerY - 40 && barrel.y <= this._playerY + 40) {
-          const currentLane = barrel.x < W / 3 ? 0 : barrel.x < (W * 2) / 3 ? 1 : 2;
+        if (barrelContainer.y >= this._playerY - 44 && barrelContainer.y <= this._playerY + 44) {
+          const currentLane = barrelContainer.x < W / 3 ? 0 : barrelContainer.x < (W * 2) / 3 ? 1 : 2;
           if (currentLane === this._playerLane) {
             barrelObj.done = true;
             this._failLevel();
@@ -276,8 +297,7 @@ export class AgilityScene extends Phaser.Scene {
       },
       onComplete: () => {
         barrelObj.done = true;
-        barrel.destroy();
-        icon.destroy();
+        barrelContainer.destroy();
         this._checkWaveComplete();
       },
     });
@@ -293,8 +313,7 @@ export class AgilityScene extends Phaser.Scene {
 
   _clearBarrels() {
     this._barrels.forEach(b => {
-      if (b.rect) b.rect.destroy();
-      if (b.icon) b.icon.destroy();
+      if (b.container) b.container.destroy();
     });
     this._barrels = [];
   }
