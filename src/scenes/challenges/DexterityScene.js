@@ -150,12 +150,18 @@ export class DexterityScene extends Phaser.Scene {
     const { goldWidth, speed, hasDecoys, goldOffset } = this._getLevelConfig(this._currentLevel);
     const cx = this.scale.width / 2;
 
-    this._goldZone.setX(cx + goldOffset).setWidth(goldWidth);
+    // Phaser 4: Rectangle GameObjects use .width = x, not .setWidth()
+    this._goldZone.setX(cx + goldOffset);
+    this._goldZone.width = goldWidth;
 
     if (hasDecoys) {
       const dw = Math.max(18, goldWidth - 8);
-      this._decoyLeft .setX(cx - this._barW * 0.30).setWidth(dw).setVisible(true);
-      this._decoyRight.setX(cx + this._barW * 0.30).setWidth(dw).setVisible(true);
+      this._decoyLeft.setX(cx - this._barW * 0.30);
+      this._decoyLeft.width = dw;
+      this._decoyLeft.setVisible(true);
+      this._decoyRight.setX(cx + this._barW * 0.30);
+      this._decoyRight.width = dw;
+      this._decoyRight.setVisible(true);
     } else {
       this._decoyLeft.setVisible(false);
       this._decoyRight.setVisible(false);
