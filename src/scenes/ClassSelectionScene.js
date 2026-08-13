@@ -171,7 +171,7 @@ export class ClassSelectionScene extends Phaser.Scene {
       this._dialog.show(`¡SOLICITUD ACEPTADA!\n\nEl Tribunal te ha concedido el título de:\n${cls.name}.\n\n¡Comienza tu desastrosa aventura!`, () => {
         this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
         this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
-          this.scene.start(SCENES.GUILD_REPORT);
+          this.scene.start(SCENES.HERO_SUMMARY);
         });
       }, "Tribunal del Gremio");
     } else {

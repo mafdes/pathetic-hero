@@ -18,6 +18,7 @@ import { StrengthScene } from "./scenes/challenges/StrengthScene.js";
 import { AgilityScene } from "./scenes/challenges/AgilityScene.js";
 import { IntelligenceScene } from "./scenes/challenges/IntelligenceScene.js";
 import { ClassSelectionScene } from "./scenes/ClassSelectionScene.js";
+import { HeroSummaryScene } from "./scenes/HeroSummaryScene.js";
 
 /** @type {Phaser.Types.Core.GameConfig} */
 const config = {
@@ -51,6 +52,7 @@ const config = {
     AgilityScene,
     IntelligenceScene,
     ClassSelectionScene,
+    HeroSummaryScene,
   ],
 };
 

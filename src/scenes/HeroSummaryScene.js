@@ -1,0 +1,212 @@
+/**
+ * HeroSummaryScene.js — Ficha del Héroe y Antesala de la Mazmorra (720×1280 HD Vertical)
+ * Muestra el resumen completo del héroe: Nombre (con selector/generador), Clase elegida, Atributos y Veredicto.
+ */
+
+import * as Phaser from "phaser";
+import {
+  COLORS, FONTS, SCENES, TIMING, DEPTHS,
+  CHALLENGES, CHALLENGE_LABELS,
+} from "../utils/constants.js";
+import { CharacterSheet } from "../systems/CharacterSheet.js";
+import { SaveManager } from "../systems/SaveManager.js";
+import { CLASS_TIERS } from "../data/classes.js";
+import { PixelButton } from "../ui/PixelButton.js";
+import { generateHeroName, getVerdict } from "../utils/helpers.js";
+
+export class HeroSummaryScene extends Phaser.Scene {
+  constructor() {
+    super({ key: SCENES.HERO_SUMMARY });
+    this.sheet = new CharacterSheet();
+  }
+
+  create() {
+    const saved = SaveManager.load();
+    if (saved) this.sheet.fromJSON(saved);
+
+    this.cameras.main.setBackgroundColor(COLORS.BG_DARK);
+    this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
+
+    this._renderUI();
+  }
+
+  _renderUI() {
+    if (this._container) this._container.destroy(true);
+
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const cx = W / 2;
+
+    this._container = this.add.container(0, 0).setDepth(DEPTHS.UI);
+
+    // ── Cabecera ──────────────────────────────────────────────────────────────
+    const title = this.add.text(cx, 55, "FICHA OFICIAL DE ADMISIÓN", {
+      fontFamily: FONTS.PRIMARY, fontSize: "26px", color: "#d4a017", resolution: 2,
+    }).setOrigin(0.5);
+    this._container.add(title);
+
+    const subtitle = this.add.text(cx, 95, "Antesala de la Mazmorra", {
+      fontFamily: FONTS.PRIMARY, fontSize: "15px", color: "#6a4e8a", resolution: 2,
+    }).setOrigin(0.5);
+    this._container.add(subtitle);
+
+    const sep1 = this.add.rectangle(cx, 120, W - 60, 3, COLORS.GOLD_DARK);
+    this._container.add(sep1);
+
+    // ── SECCIÓN 1: NOMBRE DEL HÉROE Y SELECTOR ALEATORIO / EDICIÓN ─────────────
+    const nameBoxY = 175;
+    const nameBox = this.add.rectangle(cx, nameBoxY, W - 70, 100, COLORS.UI_PANEL, 0.95)
+      .setStrokeStyle(3, COLORS.GOLD);
+    this._container.add(nameBox);
+
+    this._nameText = this.add.text(cx - 260, nameBoxY - 20, `HÉROE:  "${this.sheet.name}"`, {
+      fontFamily: FONTS.PRIMARY, fontSize: "19px", color: "#f0c040", resolution: 2,
+    }).setOrigin(0, 0.5);
+    this._container.add(this._nameText);
+
+    // Botones de Selector de Nombre
+    const randNameBtn = this.add.text(cx - 260, nameBoxY + 22, "[ 🎲 RANDOM NOMBRE ]", {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#4caf77", resolution: 2,
+    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
+    this._container.add(randNameBtn);
+
+    randNameBtn.on("pointerover", () => randNameBtn.setColor("#ffffff"));
+    randNameBtn.on("pointerout",  () => randNameBtn.setColor("#4caf77"));
+    randNameBtn.on("pointerdown", () => this._randomizeName());
+
+    const editNameBtn = this.add.text(cx + 260, nameBoxY + 22, "[ ✏️ CAMBIAR NOMBRE ]", {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#60a5fa", resolution: 2,
+    }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
+    this._container.add(editNameBtn);
+
+    editNameBtn.on("pointerover", () => editNameBtn.setColor("#ffffff"));
+    editNameBtn.on("pointerout",  () => editNameBtn.setColor("#60a5fa"));
+    editNameBtn.on("pointerdown", () => this._editName());
+
+    // ── SECCIÓN 2: CLASE SELECCIONADA Y SATIRA ────────────────────────────────
+    const classBoxY = 320;
+    const heroClassData = this._getHeroClassData(this.sheet.heroClass);
+
+    const classBox = this.add.rectangle(cx, classBoxY, W - 70, 140, COLORS.UI_PANEL, 0.95)
+      .setStrokeStyle(3, COLORS.GOLD_DARK);
+    this._container.add(classBox);
+
+    const classTitle = this.add.text(cx - 260, classBoxY - 40, `CLASE:  ${heroClassData.name}`, {
+      fontFamily: FONTS.PRIMARY, fontSize: "20px", color: "#f0c040", resolution: 2,
+    }).setOrigin(0, 0.5);
+    this._container.add(classTitle);
+
+    const classDesc = this.add.text(cx - 260, classBoxY + 15, heroClassData.description, {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#f0e6d3", wordWrap: { width: W - 130 }, lineSpacing: 6, resolution: 2,
+    }).setOrigin(0, 0.5);
+    this._container.add(classDesc);
+
+    // ── SECCIÓN 3: ATRIBUTOS Y DICTAMEN DEL TRIBUNAL ─────────────────────────
+    const statsBoxY = 570;
+    const statsBox = this.add.rectangle(cx, statsBoxY, W - 70, 310, COLORS.UI_PANEL, 0.95)
+      .setStrokeStyle(3, COLORS.UI_BORDER);
+    this._container.add(statsBox);
+
+    const statsHeader = this.add.text(cx, statsBoxY - 125, "ATRIBUTOS OFICIALES DEL GREMIO", {
+      fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#d4a017", resolution: 2,
+    }).setOrigin(0.5);
+    this._container.add(statsHeader);
+
+    const order = [
+      CHALLENGES.DEXTERITY,
+      CHALLENGES.CONSTITUTION,
+      CHALLENGES.STRENGTH,
+      CHALLENGES.AGILITY,
+      CHALLENGES.INTELLIGENCE,
+    ];
+
+    order.forEach((id, idx) => {
+      const score = this.sheet.attributes[id] ?? 0;
+      const label = CHALLENGE_LABELS[id];
+      const y = statsBoxY - 80 + idx * 36;
+
+      const statName = this.add.text(cx - 250, y, label, {
+        fontFamily: FONTS.PRIMARY, fontSize: "15px", color: "#c8a97a", resolution: 2,
+      }).setOrigin(0, 0.5);
+      this._container.add(statName);
+
+      const statVal = this.add.text(cx + 250, y, `${score} / 20`, {
+        fontFamily: FONTS.PRIMARY, fontSize: "15px", color: score >= 10 ? "#4caf77" : "#ff4444", resolution: 2,
+      }).setOrigin(1, 0.5);
+      this._container.add(statVal);
+    });
+
+    const avg = Math.round(this.sheet.getAverage());
+    const verdict = getVerdict(avg);
+
+    const verdictText = this.add.text(cx, statsBoxY + 115, `VEREDICTO GLOBAL: ${verdict} (${avg}/20)`, {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#d4a017", resolution: 2, wordWrap: { width: W - 100 }, align: "center",
+    }).setOrigin(0.5);
+    this._container.add(verdictText);
+
+    // ── BOTÓN PRINCIPAL DE ENTRADA A LA MAZMORRA ────────────────────────────
+    const playBtn = new PixelButton(this, cx, H - 150, "¡ENTRAR EN LA MAZMORRA ►!", () => {
+      this._enterDungeon();
+    }, { width: 580, height: 90, fontSize: "22px" });
+
+    this._container.add(playBtn._bg);
+    this._container.add(playBtn._label);
+    this._container.add(playBtn._cursor);
+
+    // Botón Cambiar Clase
+    const changeClassBtn = new PixelButton(this, cx, H - 55, "< CAMBIAR CLASE", () => {
+      this.scene.start(SCENES.CLASS_SELECTION);
+    }, { width: 360, height: 56, fontSize: "15px" });
+
+    this._container.add(changeClassBtn._bg);
+    this._container.add(changeClassBtn._label);
+    this._container.add(changeClassBtn._cursor);
+  }
+
+  _randomizeName() {
+    this.sheet.name = generateHeroName();
+    SaveManager.save(this.sheet);
+    if (this._nameText) {
+      this._nameText.setText(`HÉROE:  "${this.sheet.name}"`);
+    }
+  }
+
+  _editName() {
+    const inputName = window.prompt("Introduce el nombre para tu héroe:", this.sheet.name);
+    if (inputName && inputName.trim().length > 0) {
+      this.sheet.name = inputName.trim().slice(0, 24);
+      SaveManager.save(this.sheet);
+      if (this._nameText) {
+        this._nameText.setText(`HÉROE:  "${this.sheet.name}"`);
+      }
+    }
+  }
+
+  _getHeroClassData(classId) {
+    if (!classId) {
+      return {
+        name: "Aspirante sin Clase",
+        description: "Aún no has reclamado ningún título del Tribunal del Gremio.",
+      };
+    }
+
+    for (const tierObj of CLASS_TIERS) {
+      const found = tierObj.classes.find(c => c.id === classId);
+      if (found) return found;
+    }
+
+    return {
+      name: classId,
+      description: "Título concedido por decreto del Tribunal del Gremio.",
+    };
+  }
+
+  _enterDungeon() {
+    SaveManager.save(this.sheet);
+    this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
+    this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
+      // Transición hacia la aventura / fase de juego 2D RPG
+      this.scene.start(SCENES.GUILD_REPORT);
+    });
+  }
+}

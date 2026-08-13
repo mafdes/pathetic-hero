@@ -111,6 +111,7 @@ export const SCENES = {
   AGILITY: "AgilityScene",
   INTELLIGENCE: "IntelligenceScene",
   CLASS_SELECTION: "ClassSelectionScene",
+  HERO_SUMMARY: "HeroSummaryScene",
   ADVENTURE: "AdventureScene",
 };
 
