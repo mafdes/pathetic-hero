@@ -1,6 +1,6 @@
 /**
  * DexterityScene.js — Prueba de Destreza del Gremio (720×1280 HD Vertical)
- * Dificultad extrema y sabotajes activos a partir del Nivel 2/3.
+ * Dificultad equilibrada y jugable.
  */
 
 import * as Phaser from "phaser";
@@ -9,8 +9,6 @@ import {
 } from "../../utils/constants.js";
 import { DialogBox } from "../../ui/DialogBox.js";
 import { getVerdict } from "../../utils/helpers.js";
-
-// ─── Comentarios del Examinador Rotval ──────────────────────────────────────
 
 const FAIL_COMMENTS = [
   "Impresionante. Incluso los ciegos lo hacen mejor.",
@@ -30,12 +28,10 @@ const SUCCESS_COMMENTS = [
 ];
 
 const SABOTAGE_ANNOUNCEMENTS = {
-  2:  "Nivel 2. Indicador fantasma activado.\nFallo de calibración del prototipo. Ignore el magenta.",
-  3:  "Nivel 3. La diana y el indicador tienen... impulsos propios.\nCosas de la física medieval.",
+  3:  "Nivel 3. Indicador fantasma activado.\nFallo de calibración del prototipo. Ignore el magenta.",
   5:  "Nivel 5. Parpadeo de calibración del equipo.\nCompletamente normal. No nos mire así.",
   7:  "Nivel 7. Zonas de control señuelo adicionales.\nPor motivos de seguridad burocrática.",
-  9:  "Nivel 9. Puede que la velocidad varíe drásticamente.\nLa maquinaria es antigua. Presupuesto recortado.",
-  12: "Nivel 12. Modo de evaluación avanzado del Tribunal.\nNadie lo supera. Por pura estadística.",
+  10: "Nivel 10. Puede que la velocidad varíe.\nLa maquinaria es antigua. Presupuesto recortado.",
 };
 
 export class DexterityScene extends Phaser.Scene {
@@ -79,10 +75,9 @@ export class DexterityScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.BG_DEEP);
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
-    // ── Estilo de Sala Retro Pixel Art: "Galería de Calibración" ─────────────
     this._drawRoomEnvironment(W, H);
 
-    // ── HUD superior ──────────────────────────────────────────────────────────
+    // HUD superior
     this.add.rectangle(W / 2, 55, W - 60, 80, COLORS.UI_PANEL, 0.95)
       .setStrokeStyle(3, COLORS.GOLD_DARK)
       .setDepth(DEPTHS.UI_BG);
@@ -101,7 +96,6 @@ export class DexterityScene extends Phaser.Scene {
       resolution: 2,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
-    // ── Instrucción Principal ───────────────────────────────────────────────
     this.add.text(W / 2, 175, "PULSA cuando el cursor BLANCO\ncruece la zona dorada", {
       fontFamily: FONTS.PRIMARY,
       fontSize: "16px",
@@ -111,13 +105,11 @@ export class DexterityScene extends Phaser.Scene {
       lineSpacing: 8,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // ── Barra de precisión (640px de ancho) ──────────────────────────────────
     const barY = H / 2 - 80;
     const barW = W - 80;
     const barH = 60;
     const barX = 40;
 
-    // Marco de la máquina de prueba
     this.add.rectangle(W / 2, barY, barW + 16, barH + 16, COLORS.BG_DARK, 1)
       .setStrokeStyle(4, COLORS.GOLD_DARK)
       .setDepth(DEPTHS.UI_BG);
@@ -125,21 +117,17 @@ export class DexterityScene extends Phaser.Scene {
     this.add.rectangle(W / 2, barY, barW, barH, COLORS.BG_STONE, 1)
       .setDepth(DEPTHS.UI_BG + 1);
 
-    // Zona dorada objetivo
     this._goldZone = this.add.rectangle(W / 2, barY, 110, barH - 8, COLORS.GOLD, 0.6)
       .setDepth(DEPTHS.UI);
 
-    // Señuelos rojos (Nivel 7+)
     this._decoyLeft  = this.add.rectangle(0, barY, 0, barH - 8, COLORS.DANGER, 0.5)
       .setDepth(DEPTHS.UI).setVisible(false);
     this._decoyRight = this.add.rectangle(0, barY, 0, barH - 8, COLORS.DANGER, 0.5)
       .setDepth(DEPTHS.UI).setVisible(false);
 
-    // Indicador FANTASMA señuelo (magenta) a partir de Nivel 2
     this._decoyIndicator = this.add.rectangle(barX + barW, barY, 16, barH, 0xff00ff, 0.85)
       .setDepth(DEPTHS.UI + 1).setVisible(false);
 
-    // Indicador REAL (blanco)
     this._indicator = this.add.rectangle(barX, barY, 16, barH, COLORS.WHITE, 1)
       .setDepth(DEPTHS.UI + 2);
 
@@ -149,7 +137,6 @@ export class DexterityScene extends Phaser.Scene {
     this._barH    = barH;
     this._barMidX = barX + barW / 2;
 
-    // Extremos de la guía
     this.add.text(barX - 18, barY, "◄", {
       fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#6a4e8a", resolution: 2,
     }).setOrigin(1, 0.5).setDepth(DEPTHS.UI);
@@ -157,14 +144,10 @@ export class DexterityScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#6a4e8a", resolution: 2,
     }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
 
-    // Hint de control adaptativo según inputMode seleccionado
     const inputMode = this.registry.get("inputMode") ?? "keyboard";
     let hintText = "[ ESPACIO ]";
-    if (inputMode === "mouse") {
-      hintText = "[ CLICK IZQUIERDO ]";
-    } else if (inputMode === "touch") {
-      hintText = "[ TOCA LA PANTALLA ]";
-    }
+    if (inputMode === "mouse") hintText = "[ CLICK IZQUIERDO ]";
+    else if (inputMode === "touch") hintText = "[ TOCA LA PANTALLA ]";
 
     this.add.text(W / 2, barY + 80, hintText, {
       fontFamily: FONTS.PRIMARY,
@@ -173,12 +156,6 @@ export class DexterityScene extends Phaser.Scene {
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // ── TELÓN FULLSCREEN ENORME PARA LA CUENTA ATRÁS ─────────────────────────
-    this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x0d0613, 0.95)
-      .setDepth(250)
-      .setVisible(false);
-
-    // Texto de Cuenta Atrás ENORME (120px) en medio de la pantalla
     this._countdownText = this.add.text(W / 2, H / 2, "", {
       fontFamily: FONTS.PRIMARY,
       fontSize: "120px",
@@ -186,22 +163,16 @@ export class DexterityScene extends Phaser.Scene {
       resolution: 2,
     }).setOrigin(0.5).setDepth(251).setVisible(false);
 
-    // ── Diálogo Modal Centrado del Examinador (capa 300) ─────────────────────
     this._dialog = new DialogBox(this);
 
-    // ── Input ─────────────────────────────────────────────────────────────────
     this.input.keyboard?.on("keydown-SPACE", () => this._handleInput());
     this.input.on("pointerdown",             () => this._handleInput());
 
-    // ── Arrancar primer nivel ─────────────────────────────────────────────────
     this.time.delayedCall(400, () => this._beginLevel());
   }
 
-  // ─── Renderizado de Sala Retro Pixel Art ─────────────────────────────────
-
   _drawRoomEnvironment(W, H) {
     const gfx = this.add.graphics().setDepth(DEPTHS.BG);
-
     gfx.fillStyle(0x120a1f, 1);
     gfx.fillRect(0, 0, W, H);
 
@@ -227,30 +198,26 @@ export class DexterityScene extends Phaser.Scene {
     });
   }
 
-  // ─── Dificultad Brutal ────────────────────────────────────────────────────
-
+  // Curva de dificultad justa y alcanzable
   _getLevelConfig(level) {
     const t    = (level - 1) / 19;
     const barW = this._barW;
 
     return {
-      speed:              280 + t * 620, // Velocidad inicial más rápida
-      goldWidth:          Math.max(24, Math.round(barW * 0.16 - t * barW * 0.12)), // Zona dorada más estrecha
-      hasDecoyIndicator:  level >= 2, // Indicador fantasma desde Nivel 2
-      decoySpeed:         (300 + t * 500) * 1.4,
+      speed:              200 + t * 450,
+      goldWidth:          Math.max(34, Math.round(barW * 0.22 - t * barW * 0.12)),
+      hasDecoyIndicator:  level >= 3,
+      decoySpeed:         (220 + t * 400) * 1.2,
       zoneMoving:         level >= 3,
-      zoneMoveAmp:        level >= 3 ? Math.min(barW * 0.10 + (level - 3) * barW * 0.02, barW * 0.36) : 0,
-      zoneMoveFreq:       level >= 3 ? 0.7 + (level - 3) * 0.10 : 0,
-      directionFlip:      level >= 3, // Giros de sentido desde Nivel 3
-      speedBurst:         level >= 4, // Acelerones repentinos desde Nivel 4
+      zoneMoveAmp:        level >= 3 ? Math.min(barW * 0.06 + (level - 3) * barW * 0.012, barW * 0.26) : 0,
+      zoneMoveFreq:       level >= 3 ? 0.5 + (level - 3) * 0.06 : 0,
       zoneBlink:          level >= 5,
-      blinkInterval:      level >= 5 ? Math.max(1000 - (level - 5) * 100, 350) : 0,
-      blinkDuration:      level >= 5 ? Math.min(300 + (level - 5) * 30, 600) : 0,
+      blinkInterval:      level >= 5 ? Math.max(1200 - (level - 5) * 80, 500) : 0,
+      blinkDuration:      level >= 5 ? Math.min(250 + (level - 5) * 20, 500) : 0,
       hasDecoys:          level >= 7,
+      speedBurst:         level >= 10,
     };
   }
-
-  // ─── Flujo de Niveles ────────────────────────────────────────────────────
 
   _beginLevel() {
     const announcement = SABOTAGE_ANNOUNCEMENTS[this._currentLevel];
@@ -324,21 +291,9 @@ export class DexterityScene extends Phaser.Scene {
 
       if (cfg.speedBurst) {
         this._burstTimer = this.time.addEvent({
-          delay: Phaser.Math.Between(500, 1100),
+          delay: Phaser.Math.Between(700, 1400),
           loop: false,
           callback: () => this._triggerSpeedBurst(cfg.speed),
-        });
-      }
-
-      if (cfg.directionFlip) {
-        this._flipTimer = this.time.addEvent({
-          delay: Phaser.Math.Between(450, 900),
-          loop: true,
-          callback: () => {
-            if (!this._inCountdown && this._alive) {
-              this._indicatorDir *= -1;
-            }
-          },
         });
       }
     });
@@ -381,7 +336,7 @@ export class DexterityScene extends Phaser.Scene {
   _triggerSpeedBurst(baseSpeed) {
     if (!this._alive || this._inCountdown) return;
     this._speedBurstOn = true;
-    this._currentSpeed = baseSpeed * 2.5;
+    this._currentSpeed = baseSpeed * 2.0;
 
     this.time.delayedCall(500, () => {
       if (this._alive) {
@@ -398,7 +353,6 @@ export class DexterityScene extends Phaser.Scene {
     this._goldZone.setVisible(true);
     this._speedBurstOn = false;
     if (this._countdownText) this._countdownText.setVisible(false);
-    if (this._coverPanel)    this._coverPanel.setVisible(false);
   }
 
   update(time, delta) {
@@ -467,7 +421,6 @@ export class DexterityScene extends Phaser.Scene {
 
   _showFeedback(hit) {
     this._clearLevelTimers();
-    this._coverPanel.setVisible(true);
 
     const comment  = Phaser.Math.RND.pick(hit ? SUCCESS_COMMENTS : FAIL_COMMENTS);
     const flashHex = hit ? COLORS.SUCCESS_BRIGHT : COLORS.DANGER_BRIGHT;
@@ -501,7 +454,6 @@ export class DexterityScene extends Phaser.Scene {
   _endGame(perfect = false) {
     this._alive = false;
     this._clearLevelTimers();
-    this._coverPanel.setVisible(true);
 
     const finalScore = this._score;
     const msg = perfect

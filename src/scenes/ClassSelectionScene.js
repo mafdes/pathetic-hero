@@ -1,42 +1,21 @@
 /**
- * ClassSelectionScene.js — Selección de Clase del Héroe (720×1280 HD Vertical)
+ * ClassSelectionScene.js — Selección de Clase por Escalones (Tiers I - IV)
+ * Clases narrativas satíricas sin bonificadores.
  */
 
 import * as Phaser from "phaser";
 import { COLORS, FONTS, SCENES, TIMING, DEPTHS } from "../utils/constants.js";
+import { CLASS_TIERS } from "../data/classes.js";
 import { CharacterSheet } from "../systems/CharacterSheet.js";
 import { SaveManager } from "../systems/SaveManager.js";
+import { DialogBox } from "../ui/DialogBox.js";
 import { PixelButton } from "../ui/PixelButton.js";
-
-const HERO_CLASSES = [
-  {
-    id: "barbarian",
-    name: "BÁRBARO MEDIOCRE",
-    icon: "🪓",
-    desc: "Gran fuerza bruta, cero elegancia.\nSuperó las pruebas a cabezazos.",
-    perks: "HP +50% | Fuerza +4 | Inteligencia -2",
-  },
-  {
-    id: "mage",
-    name: "MAGO BECARIO",
-    icon: "🧙",
-    desc: "Especialista en papeleo místico\ny pociones caducadas.",
-    perks: "Magia +40% | Inteligencia +5 | Armadura -3",
-  },
-  {
-    id: "rogue",
-    name: "PÍCARO SIN GRACIA",
-    icon: "🗡️",
-    desc: "Huye antes de que empiece la pelea.\nExperto en disculpas.",
-    perks: "Velocidad +35% | Crítico +3 | HP -20%",
-  },
-];
 
 export class ClassSelectionScene extends Phaser.Scene {
   constructor() {
     super({ key: SCENES.CLASS_SELECTION });
     this.sheet = new CharacterSheet();
-    this._selectedIndex = 0;
+    this._currentTierIndex = 0; // Empieza en Escalón I (0)
   }
 
   create() {
@@ -45,88 +24,113 @@ export class ClassSelectionScene extends Phaser.Scene {
 
     const W = this.scale.width;
     const H = this.scale.height;
-    const cx = W / 2;
 
     this.cameras.main.setBackgroundColor(COLORS.BG_DARK);
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
+    this._dialog = new DialogBox(this);
+    this._renderTierUI();
+  }
+
+  _renderTierUI() {
+    // Limpiar elementos dinámicos anteriores
+    if (this._container) this._container.destroy(true);
+
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const cx = W / 2;
+
+    const tierData = CLASS_TIERS[this._currentTierIndex];
+    this._container = this.add.container(0, 0).setDepth(DEPTHS.UI);
+
     // ── Cabecera ──────────────────────────────────────────────────────────────
-    this.add.text(cx, 60, "TRIBUNAL DEL GREMIO", {
-      fontFamily: FONTS.PRIMARY, fontSize: "28px", color: "#d4a017", resolution: 2,
-    }).setOrigin(0.5).setDepth(DEPTHS.UI);
+    const headerTitle = this.add.text(cx, 50, tierData.title, {
+      fontFamily: FONTS.PRIMARY, fontSize: "24px", color: "#d4a017", resolution: 2,
+    }).setOrigin(0.5);
+    this._container.add(headerTitle);
 
-    this.add.text(cx, 110, "ASIGNACIÓN DE CLASE OFICIAL", {
-      fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#6a4e8a", resolution: 2,
-    }).setOrigin(0.5).setDepth(DEPTHS.UI);
+    const headerSub = this.add.text(cx, 95, tierData.subtitle, {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#8a7a9a", wordWrap: { width: W - 80 }, align: "center", resolution: 2, lineSpacing: 6,
+    }).setOrigin(0.5);
+    this._container.add(headerSub);
 
-    this.add.rectangle(cx, 140, W - 60, 3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
+    const sep1 = this.add.rectangle(cx, 135, W - 60, 3, COLORS.GOLD_DARK);
+    this._container.add(sep1);
 
-    // Nombre y expediente
-    this.add.text(cx, 175, `${this.sheet.name}`, {
-      fontFamily: FONTS.PRIMARY, fontSize: "20px", color: "#c8a97a", resolution: 2,
-    }).setOrigin(0.5).setDepth(DEPTHS.UI);
+    // ── Lista de Clases del Tier ─────────────────────────────────────────────
+    const startY = 160;
+    const itemH  = 160;
+    const gapY   = 175;
 
-    // ── Tarjetas de Clase ──────────────────────────────────────────────────
-    const startY = 240;
-    const cardH = 220;
-    const gapY = 240;
-
-    this._cards = HERO_CLASSES.map((cls, idx) => {
+    tierData.classes.forEach((cls, idx) => {
       const y = startY + idx * gapY;
-      const bg = this.add.rectangle(cx, y + cardH / 2, W - 80, cardH, COLORS.UI_PANEL, 0.95)
+      if (y + itemH > H - 150) return; // Evitar salir de pantalla en vertical
+
+      const bg = this.add.rectangle(cx, y + itemH / 2, W - 70, itemH, COLORS.UI_PANEL, 0.95)
         .setStrokeStyle(3, COLORS.UI_BORDER)
-        .setInteractive({ useHandCursor: true })
-        .setDepth(DEPTHS.UI);
+        .setInteractive({ useHandCursor: true });
+      this._container.add(bg);
 
-      const icon = this.add.text(cx - 230, y + 50, cls.icon, { fontSize: "44px" })
-        .setOrigin(0.5).setDepth(DEPTHS.UI + 1);
+      const title = this.add.text(cx - 270, y + 26, cls.name, {
+        fontFamily: FONTS.PRIMARY, fontSize: "20px", color: "#f0c040", resolution: 2,
+      }).setOrigin(0, 0.5);
+      this._container.add(title);
 
-      const title = this.add.text(cx - 170, y + 30, cls.name, {
-        fontFamily: FONTS.PRIMARY, fontSize: "20px", color: "#f0e6d3", resolution: 2,
-      }).setOrigin(0, 0.5).setDepth(DEPTHS.UI + 1);
+      const req = this.add.text(cx + 270, y + 26, cls.reqText, {
+        fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#6a4e8a", resolution: 2,
+      }).setOrigin(1, 0.5);
+      this._container.add(req);
 
-      const desc = this.add.text(cx - 170, y + 85, cls.desc, {
-        fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#8a7a9a", wordWrap: { width: 400 }, lineSpacing: 6, resolution: 2,
-      }).setOrigin(0, 0.5).setDepth(DEPTHS.UI + 1);
+      const desc = this.add.text(cx - 270, y + 80, cls.description, {
+        fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#f0e6d3", wordWrap: { width: W - 140 }, lineSpacing: 6, resolution: 2,
+      }).setOrigin(0, 0.5);
+      this._container.add(desc);
 
-      const perks = this.add.text(cx - 170, y + 150, cls.perks, {
-        fontFamily: FONTS.PRIMARY, fontSize: "13px", color: "#d4a017", resolution: 2,
-      }).setOrigin(0, 0.5).setDepth(DEPTHS.UI + 1);
-
-      bg.on("pointerdown", () => {
-        this._selectedIndex = idx;
-        this._updateSelection();
-      });
-
-      return { bg, title, cls };
+      bg.on("pointerover", () => bg.setStrokeStyle(3, COLORS.GOLD));
+      bg.on("pointerout",  () => bg.setStrokeStyle(3, COLORS.UI_BORDER));
+      bg.on("pointerdown", () => this._trySelectClass(cls, tierData));
     });
 
-    this._updateSelection();
+    // ── Botón "Rendirse y mirar Clases Inferiores" ────────────────────────────
+    if (tierData.giveUpText) {
+      const giveUpBtn = new PixelButton(this, cx, H - 75, tierData.giveUpText, () => {
+        this._currentTierIndex = Math.min(CLASS_TIERS.length - 1, this._currentTierIndex + 1);
+        this._renderTierUI();
+      }, { width: 620, height: 76, fontSize: "16px" });
 
-    // ── Botón Confirmar Clase ───────────────────────────────────────────────
-    new PixelButton(this, cx, H - 90, "CONFIRMAR Y COMENSAR ►", () => this._confirmClass(), {
-      width: 540, height: 86, fontSize: "22px",
-    });
+      this._container.add(giveUpBtn._bg);
+      this._container.add(giveUpBtn._label);
+      this._container.add(giveUpBtn._cursor);
+    }
   }
 
-  _updateSelection() {
-    this._cards.forEach((c, idx) => {
-      const isSel = idx === this._selectedIndex;
-      c.bg.setStrokeStyle(4, isSel ? COLORS.GOLD : COLORS.UI_BORDER);
-      c.bg.setFillStyle(isSel ? 0x3d245c : COLORS.UI_PANEL);
-      c.title.setColor(isSel ? "#f0c040" : "#f0e6d3");
-    });
-  }
+  _trySelectClass(cls, tierData) {
+    // Evaluar si se cumplen los requisitos
+    const reqs = cls.requirements || {};
+    let meetsReqs = true;
 
-  _confirmClass() {
-    const chosen = HERO_CLASSES[this._selectedIndex];
-    this.sheet.heroClass = chosen.id;
-    SaveManager.save(this.sheet);
+    for (const [attr, minVal] of Object.entries(reqs)) {
+      const userVal = this.sheet.attributes[attr] ?? 0;
+      if (userVal < minVal) {
+        meetsReqs = false;
+        break;
+      }
+    }
 
-    this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
-    this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
-      // Avanzar a la aventura o volver al expediente con resumen
-      this.scene.start(SCENES.GUILD_REPORT);
-    });
+    if (meetsReqs) {
+      // ¡Aceptado!
+      this.sheet.heroClass = cls.id;
+      SaveManager.save(this.sheet);
+
+      this._dialog.show(`¡SOLICITUD ACEPTADA!\n\nEl Tribunal te ha concedido el título de:\n${cls.name}.\n\n¡Comienza tu desastrosa aventura!`, () => {
+        this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
+        this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
+          this.scene.start(SCENES.GUILD_REPORT);
+        });
+      }, "Tribunal del Gremio");
+    } else {
+      // Rechazo sarcástico
+      this._dialog.show(`SOLICITUD RECHAZADA\n\n${cls.rejection}\n\n[ ${cls.reqText} ]`, null, "Tribunal del Gremio");
+    }
   }
 }
