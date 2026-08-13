@@ -50,7 +50,7 @@ export class MainMenuScene extends Phaser.Scene {
 
     const subtitle = this.add.text(W / 2, 370, "~ Un RPG para valientes mediocres ~", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "24px",
+      fontSize: "16px",
       color: "#6a4e8a",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
