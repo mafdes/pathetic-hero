@@ -5,30 +5,23 @@
 import * as Phaser from "phaser";
 import { COLORS, FONTS, FONT_SIZES, SCENES, TIMING, DEPTHS } from "../utils/constants.js";
 
-const INTRO_LINES = [
-  "ANNO DOMINI 1347.",
-  "",
-  "El Imperio está en paz.",
-  "Sus ciudades prosperan.",
-  "Sus héroes... no tanto.",
-  "",
-  "El Gremio de Héroes lleva",
-  "300 años gestionando el",
-  "fracaso ajeno con eficiencia",
-  "burocrática impecable.",
-  "",
-  "Hoy, un nuevo aspirante",
-  "llama a sus puertas.",
-  "",
-  "Tú.",
-  "",
-  "Dios nos coja confesados.",
-];
+const INTRO_TEXT = `ANNO DOMINI 1347.
+
+El Imperio está en paz. Sus ciudades prosperan.
+Sus héroes... no tanto.
+
+El Gremio de Héroes lleva 300 años gestionando
+el fracaso ajeno con eficiencia burocrática impecable.
+
+Hoy, un nuevo aspirante llama a sus puertas.
+
+Tú.
+
+Dios nos coja confesados.`;
 
 export class IntroScene extends Phaser.Scene {
   constructor() {
     super({ key: SCENES.INTRO });
-    this._lineIndex = 0;
     this._charIndex = 0;
     this._typeTimer = null;
     this._done = false;
@@ -47,18 +40,19 @@ export class IntroScene extends Phaser.Scene {
         .setDisplaySize(W, H).setAlpha(0.35).setDepth(DEPTHS.BG);
     }
 
-    // Texto principal
-    this._currentLineText = this.add.text(W / 2, H / 2 - 60, "", {
+    // Texto principal formateado para pantalla panorámica (960x540)
+    this._currentLineText = this.add.text(W / 2, H / 2 - 40, "", {
       fontFamily: FONTS.PRIMARY,
       fontSize: FONT_SIZES.BODY,
       color: "#f0e6d3",
       resolution: 2,
       align: "center",
-      lineSpacing: 12,
+      wordWrap: { width: 780 },
+      lineSpacing: 14,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
     // Hint "SKIP"
-    this._skipHint = this.add.text(W - 20, H - 20, "[ CUALQUIER TECLA — SKIP ]", {
+    this._skipHint = this.add.text(W - 24, H - 24, "[ CUALQUIER TECLA — SKIP ]", {
       fontFamily: FONTS.PRIMARY,
       fontSize: FONT_SIZES.TINY,
       color: "#6a4e8a",
@@ -73,8 +67,6 @@ export class IntroScene extends Phaser.Scene {
       repeat: -1,
     });
 
-    this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
-
     this.time.delayedCall(TIMING.TRANSITION_DURATION + 100, () => {
       this._skipCooldown = true;
       this._startTyping();
@@ -87,7 +79,7 @@ export class IntroScene extends Phaser.Scene {
   _startTyping() {
     if (this._typeTimer) this._typeTimer.remove();
     this._typeTimer = this.time.addEvent({
-      delay: TIMING.TYPEWRITER_DELAY,
+      delay: TIMING.TYPEWRITER_DELAY * 0.8,
       callback: this._typeChar,
       callbackScope: this,
       loop: true,
@@ -95,32 +87,19 @@ export class IntroScene extends Phaser.Scene {
   }
 
   _typeChar() {
-    if (this._lineIndex >= INTRO_LINES.length) { this._finishIntro(); return; }
-
-    const currentLine = INTRO_LINES[this._lineIndex];
-    if (this._charIndex > currentLine.length) {
-      this._typeTimer.delay = TIMING.TYPEWRITER_DELAY * 8;
-      this._charIndex = 0;
-      this._lineIndex++;
-      this._renderLines();
+    if (this._charIndex >= INTRO_TEXT.length) {
+      this._finishIntro();
       return;
     }
-    this._typeTimer.delay = TIMING.TYPEWRITER_DELAY;
     this._charIndex++;
-    this._renderLines();
-  }
-
-  _renderLines() {
-    const completed = INTRO_LINES.slice(0, this._lineIndex).join("\n");
-    const partial = INTRO_LINES[this._lineIndex]?.slice(0, this._charIndex) ?? "";
-    this._currentLineText.setText(completed ? completed + "\n" + partial : partial);
+    this._currentLineText.setText(INTRO_TEXT.slice(0, this._charIndex));
   }
 
   _handleSkip() {
     if (!this._skipCooldown) return;
     if (!this._done) {
       if (this._typeTimer) this._typeTimer.remove();
-      this._currentLineText.setText(INTRO_LINES.join("\n"));
+      this._currentLineText.setText(INTRO_TEXT);
       this._done = true;
       this.time.delayedCall(TIMING.COOLDOWN_AFTER_RESULT, () => {
         this.input.keyboard?.once("keydown", this._goToMenu, this);

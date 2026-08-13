@@ -4,15 +4,10 @@
  * Mecánica base: barra horizontal con indicador en movimiento.
  * El jugador pulsa cuando el indicador cruce la zona dorada.
  *
- * EL EXAMINADOR SABOTEA ACTIVAMENTE AL ASPIRANTE:
- *   Nv 1-2  → Normal. Lento. El Examinador evalúa.
- *   Nv 3    → La zona DORADA SE MUEVE (seno suave). "Ah, se ha movido."
- *   Nv 5    → La zona PARPADEA y se oculta. "Calibración en curso."
- *   Nv 7    → Señuelos ROJOS idénticos en ancho a la zona real.
- *   Nv 9    → Aceleración REPENTINA a mitad de la barra. "Brisa."
- *   Nv 12+  → Todo a la vez. El caos total.
- *
- * La puntuación final es el último nivel superado (0-20).
+ * INCLUYE:
+ * - Reinicio limpio del indicador a la izquierda (barX) al arrancar cada nivel.
+ * - Cuenta atrás visual (3... 2... 1... ¡PREPARATE!) antes de iniciar el movimiento.
+ * - Sabotajes progresivos del Examinador Rotval a partir de nivel 3.
  */
 
 import * as Phaser from "phaser";
@@ -61,6 +56,7 @@ export class DexterityScene extends Phaser.Scene {
     this._currentLevel = 1;
     this._maxLevels    = 20;
     this._alive        = true;
+    this._inCountdown  = true; // Pausa durante la cuenta atrás
     this._inputCooldown = false;
     this._score        = 0;
 
@@ -75,7 +71,7 @@ export class DexterityScene extends Phaser.Scene {
     this._blinkTimer   = null;
 
     // Estado de la ráfaga de velocidad
-    this._speedBurst   = false;
+    this._speedBurstOn = false;
     this._burstTimer   = null;
     this._currentSpeed = 0;
   }
@@ -128,7 +124,7 @@ export class DexterityScene extends Phaser.Scene {
     this._goldZone = this.add.rectangle(W / 2, barY, 80, barH - 6, COLORS.GOLD, 0.6)
       .setDepth(DEPTHS.UI);
 
-    // Señuelos rojos (idénticos en ancho a la zona dorada)
+    // Señuelos rojos
     this._decoyLeft  = this.add.rectangle(0, barY, 0, barH - 6, COLORS.DANGER, 0.5)
       .setDepth(DEPTHS.UI).setVisible(false);
     this._decoyRight = this.add.rectangle(0, barY, 0, barH - 6, COLORS.DANGER, 0.5)
@@ -136,7 +132,7 @@ export class DexterityScene extends Phaser.Scene {
 
     // Indicador (cursor móvil)
     this._indicator = this.add.rectangle(barX, barY, 10, barH, COLORS.WHITE, 1)
-      .setDepth(DEPTHS.UI + 1); // encima de todo
+      .setDepth(DEPTHS.UI + 1);
 
     this._barX    = barX;
     this._barW    = barW;
@@ -144,7 +140,7 @@ export class DexterityScene extends Phaser.Scene {
     this._barH    = barH;
     this._barMidX = barX + barW / 2;
 
-    // Marcadores de los extremos
+    // Extremos
     this.add.text(barX - 10, barY, "◄", {
       fontFamily: FONTS.PRIMARY, fontSize: FONT_SIZES.SMALL, color: "#3d3d6b", resolution: 2,
     }).setOrigin(1, 0.5).setDepth(DEPTHS.UI);
@@ -160,13 +156,21 @@ export class DexterityScene extends Phaser.Scene {
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
+    // ── Texto de Cuenta Atrás (3... 2... 1... ¡YA!) ─────────────────────────
+    this._countdownText = this.add.text(W / 2, barY - 60, "", {
+      fontFamily: FONTS.PRIMARY,
+      fontSize: "36px",
+      color: "#d4a017",
+      resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI + 2).setVisible(false);
+
     // ── Diálogo del Examinador ────────────────────────────────────────────────
     this._dialog = new DialogBox(this, {
       y: H - 160,
       height: 140,
     });
 
-    // ── Input (único punto de entrada) ───────────────────────────────────────
+    // ── Input ─────────────────────────────────────────────────────────────────
     this.input.keyboard?.on("keydown-SPACE", () => this._handleInput());
     this.input.keyboard?.on("keydown-Z",     () => this._handleInput());
     this.input.keyboard?.on("keydown-ENTER", () => this._handleInput());
@@ -176,72 +180,64 @@ export class DexterityScene extends Phaser.Scene {
     this.time.delayedCall(400, () => this._beginLevel());
   }
 
-  // ─── Configuración de dificultad por nivel ─────────────────────────────────
+  // ─── Dificultad ──────────────────────────────────────────────────────────
 
   _getLevelConfig(level) {
-    const t    = (level - 1) / 19; // 0 (nv1) → 1 (nv20)
+    const t    = (level - 1) / 19;
     const barW = this._barW;
 
     return {
-      // Velocidad del indicador (px/s)
-      speed:     160 + t * 400,
-
-      // Anchura de la zona dorada (se encoge con el nivel)
-      goldWidth: Math.max(28, Math.round(barW * 0.21 - t * barW * 0.14)),
-
-      // SABOTAJE 1 (nv 3+): zona dorada que se desplaza en seno
+      speed:         160 + t * 400,
+      goldWidth:     Math.max(28, Math.round(barW * 0.21 - t * barW * 0.14)),
       zoneMoving:    level >= 3,
       zoneMoveAmp:   level >= 3 ? Math.min(barW * 0.06 + (level - 3) * barW * 0.012, barW * 0.28) : 0,
-      zoneMoveFreq:  level >= 3 ? 0.5 + (level - 3) * 0.06 : 0, // Hz
-
-      // SABOTAJE 2 (nv 5+): zona parpadea y desaparece
-      zoneBlink:      level >= 5,
-      blinkInterval:  level >= 5 ? Math.max(1400 - (level - 5) * 80, 500) : 0, // ms entre parpadeos
-      blinkDuration:  level >= 5 ? Math.min(200 + (level - 5) * 20, 500) : 0,  // ms oculta
-
-      // SABOTAJE 3 (nv 7+): señuelos rojos del mismo tamaño que la zona real
-      hasDecoys: level >= 7,
-
-      // SABOTAJE 4 (nv 9+): ráfagas de velocidad aleatoria del indicador
-      speedBurst: level >= 9,
+      zoneMoveFreq:  level >= 3 ? 0.5 + (level - 3) * 0.06 : 0,
+      zoneBlink:     level >= 5,
+      blinkInterval: level >= 5 ? Math.max(1400 - (level - 5) * 80, 500) : 0,
+      blinkDuration: level >= 5 ? Math.min(200 + (level - 5) * 20, 500) : 0,
+      hasDecoys:     level >= 7,
+      speedBurst:    level >= 9,
     };
   }
 
-  // ─── Flujo de niveles ──────────────────────────────────────────────────────
+  // ─── Flujo de Niveles con Cuenta Atrás ───────────────────────────────────
 
   _beginLevel() {
-    // Si este nivel tiene anuncio de sabotaje, mostrarlo antes
     const announcement = SABOTAGE_ANNOUNCEMENTS[this._currentLevel];
     if (announcement) {
-      this._dialog.show(announcement, () => this._startLevel(), "Examinador Rotval");
+      this._dialog.show(announcement, () => this._prepareAndStartLevel(), "Examinador Rotval");
     } else {
-      this._startLevel();
+      this._prepareAndStartLevel();
     }
   }
 
-  _startLevel() {
+  _prepareAndStartLevel() {
     if (!this._alive) return;
 
-    // Limpiar timers del nivel anterior
     this._clearLevelTimers();
 
     const cfg = this._getLevelConfig(this._currentLevel);
     const cx  = this._barMidX;
 
-    // ── Zona dorada ───────────────────────────────────────────────────────────
+    // Resetear posición del indicador al inicio de la barra
+    this._indicatorX   = this._barX;
+    this._indicatorDir = 1;
+    this._indicator.setX(this._barX);
+    this._indicator.setAlpha(1);
+
+    // Posicionar zona dorada
     this._goldZone.setX(cx).setVisible(true);
     this._goldZone.width = cfg.goldWidth;
 
-    // Guardar base para el movimiento ondulante
     this._zoneBaseX    = cx;
     this._zoneT        = 0;
     this._zoneMoving   = cfg.zoneMoving;
     this._zoneMoveAmp  = cfg.zoneMoveAmp;
     this._zoneMoveFreq = cfg.zoneMoveFreq;
 
-    // ── Señuelos ──────────────────────────────────────────────────────────────
+    // Señuelos
     if (cfg.hasDecoys) {
-      const dw = cfg.goldWidth; // mismo ancho que la zona real (así no hay trampa visual)
+      const dw = cfg.goldWidth;
       this._decoyLeft.setX(cx - this._barW * 0.30);
       this._decoyLeft.width = dw;
       this._decoyLeft.setVisible(true);
@@ -253,46 +249,84 @@ export class DexterityScene extends Phaser.Scene {
       this._decoyRight.setVisible(false);
     }
 
-    // ── Parpadeo de zona ──────────────────────────────────────────────────────
-    if (cfg.zoneBlink) {
-      this._blinkTimer = this.time.addEvent({
-        delay: cfg.blinkInterval,
-        loop: true,
-        callback: () => {
-          if (!this._goldZone.visible) return;
-          this._goldZone.setVisible(false);
-          this.time.delayedCall(cfg.blinkDuration, () => {
-            if (this._alive) this._goldZone.setVisible(true);
-          });
+    this._currentSpeed  = cfg.speed;
+    this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
+
+    // PAUSA DE CUENTA ATRÁS (3... 2... 1... ¡PREPARATE!)
+    this._inCountdown = true;
+    this._inputCooldown = true;
+
+    this._runCountdown(() => {
+      if (!this._alive) return;
+      this._inCountdown   = false;
+      this._inputCooldown = false;
+
+      // Iniciar timers de sabotaje una vez terminada la cuenta atrás
+      if (cfg.zoneBlink) {
+        this._blinkTimer = this.time.addEvent({
+          delay: cfg.blinkInterval,
+          loop: true,
+          callback: () => {
+            if (!this._goldZone.visible) return;
+            this._goldZone.setVisible(false);
+            this.time.delayedCall(cfg.blinkDuration, () => {
+              if (this._alive) this._goldZone.setVisible(true);
+            });
+          },
+        });
+      }
+
+      if (cfg.speedBurst) {
+        this._burstTimer = this.time.addEvent({
+          delay: Phaser.Math.Between(800, 1600),
+          loop: false,
+          callback: () => this._triggerSpeedBurst(cfg.speed),
+        });
+      }
+    });
+  }
+
+  // ─── Animación de Cuenta Atrás (3... 2... 1... ¡YA!) ──────────────────────
+
+  _runCountdown(onComplete) {
+    const steps = ["3", "2", "1", "¡YA!"];
+    let stepIndex = 0;
+
+    const showStep = () => {
+      if (!this._alive) return;
+      if (stepIndex >= steps.length) {
+        this._countdownText.setVisible(false);
+        if (onComplete) onComplete();
+        return;
+      }
+
+      const text = steps[stepIndex];
+      const isYa = text === "¡YA!";
+      this._countdownText.setText(text)
+        .setColor(isYa ? "#4caf77" : "#d4a017")
+        .setScale(1.4)
+        .setVisible(true);
+
+      this.tweens.add({
+        targets: this._countdownText,
+        scale: 1.0,
+        duration: isYa ? 200 : 320,
+        ease: "Quad.easeOut",
+        onComplete: () => {
+          stepIndex++;
+          this.time.delayedCall(isYa ? 150 : 250, showStep);
         },
       });
-    }
+    };
 
-    // ── Ráfaga de velocidad ───────────────────────────────────────────────────
-    this._currentSpeed  = cfg.speed;
-    this._speedBurstOn  = false;
-    if (cfg.speedBurst) {
-      this._burstTimer = this.time.addEvent({
-        delay: Phaser.Math.Between(800, 1600),
-        loop: false,
-        callback: () => this._triggerSpeedBurst(cfg.speed),
-      });
-    }
-
-    // ── Indicador ─────────────────────────────────────────────────────────────
-    this._indicatorX   = this._barX;
-    this._indicatorDir = 1;
-    this._inputCooldown = false;
-
-    this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
+    showStep();
   }
 
   _triggerSpeedBurst(baseSpeed) {
-    if (!this._alive) return;
-    this._speedBurstOn  = true;
-    this._currentSpeed  = baseSpeed * 2.2;
+    if (!this._alive || this._inCountdown) return;
+    this._speedBurstOn = true;
+    this._currentSpeed = baseSpeed * 2.2;
 
-    // Volver a normal después de 600ms
     this.time.delayedCall(600, () => {
       if (this._alive) {
         this._currentSpeed = baseSpeed;
@@ -306,12 +340,13 @@ export class DexterityScene extends Phaser.Scene {
     if (this._burstTimer) { this._burstTimer.remove(); this._burstTimer = null; }
     this._goldZone.setVisible(true);
     this._speedBurstOn = false;
+    if (this._countdownText) this._countdownText.setVisible(false);
   }
 
-  // ─── Update loop ──────────────────────────────────────────────────────────
+  // ─── Update Loop ──────────────────────────────────────────────────────────
 
   update(time, delta) {
-    if (!this._alive || this._dialog.isVisible()) return;
+    if (!this._alive || this._inCountdown || this._dialog.isVisible()) return;
 
     const dt = delta / 1000;
 
@@ -328,7 +363,7 @@ export class DexterityScene extends Phaser.Scene {
 
     this._indicator.setX(this._indicatorX);
 
-    // Mover zona dorada en onda sinusoidal
+    // Mover zona dorada en onda senoidal
     if (this._zoneMoving) {
       this._zoneT += dt;
       const offset = Math.sin(this._zoneT * this._zoneMoveFreq * Math.PI * 2) * this._zoneMoveAmp;
@@ -348,17 +383,17 @@ export class DexterityScene extends Phaser.Scene {
       this._dialog.advance();
       return;
     }
+    if (this._inCountdown) return; // Ignorar inputs durante cuenta atrás
     this._onAction();
   }
 
   _onAction() {
-    if (!this._alive || this._inputCooldown) return;
+    if (!this._alive || this._inputCooldown || this._inCountdown) return;
     this._inputCooldown = true;
     this._showFeedback(this._isInGoldZone());
   }
 
   _isInGoldZone() {
-    // Si la zona está oculta (parpadeo), no cuenta como válida
     if (!this._goldZone.visible) return false;
 
     const ix    = this._indicatorX;
@@ -373,8 +408,8 @@ export class DexterityScene extends Phaser.Scene {
   _showFeedback(hit) {
     this._clearLevelTimers();
 
-    const comment   = Phaser.Math.RND.pick(hit ? SUCCESS_COMMENTS : FAIL_COMMENTS);
-    const flashHex  = hit ? COLORS.SUCCESS_BRIGHT : COLORS.DANGER_BRIGHT;
+    const comment  = Phaser.Math.RND.pick(hit ? SUCCESS_COMMENTS : FAIL_COMMENTS);
+    const flashHex = hit ? COLORS.SUCCESS_BRIGHT : COLORS.DANGER_BRIGHT;
     this.cameras.main.flash(200, ...this._hexToRGB(flashHex), true);
 
     this.tweens.add({
