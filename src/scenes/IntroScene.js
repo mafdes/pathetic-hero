@@ -1,6 +1,5 @@
 /**
  * IntroScene.js — Pantalla de créditos narrativa (960×540)
- * Texto fijo con anclaje superior-izquierdo para evitar saltos o re-centrados daltónicos durante el typewriter.
  */
 
 import * as Phaser from "phaser";
@@ -39,20 +38,16 @@ export class IntroScene extends Phaser.Scene {
         .setDisplaySize(W, H).setAlpha(0.35).setDepth(DEPTHS.BG);
     }
 
-    // Marco o contenedor de texto fijo (centrado en pantalla pero con origen superior-izquierdo)
-    const marginX = 80;
-    const marginY = 60;
-    const textWidth = W - (marginX * 2); // 800px de ancho fijo
-
-    this._textObject = this.add.text(marginX, marginY, "", {
+    // Texto principal centrado, grande (24px) y con interlineado proporcional ajustado (10px)
+    this._textObject = this.add.text(W / 2, H / 2 - 30, "", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "18px",
+      fontSize: "24px",
       color: "#f0e6d3",
       resolution: 2,
-      align: "left",
-      wordWrap: { width: textWidth },
-      lineSpacing: 18,
-    }).setOrigin(0, 0).setDepth(DEPTHS.UI);
+      align: "center",
+      wordWrap: { width: 820 },
+      lineSpacing: 10,
+    }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
     // Hint "SKIP"
     this._skipHint = this.add.text(W - 24, H - 24, "[ CUALQUIER TECLA — SKIP ]", {
