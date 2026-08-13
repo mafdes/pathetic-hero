@@ -1,7 +1,7 @@
 /**
  * ClassSelectionScene.js — Selección de Clase por Escalones (Tiers I - IV)
  * Clases narrativas satíricas sin bonificadores.
- * Maquetación de tarjetas sin solapamientos y avance modal garantizado al hacer click/pulsar espacio.
+ * Incluye sello [ RECHAZADO ] para clases denegadas (no re-seleccionables) y ajuste impecable de texto en requisitos.
  */
 
 import * as Phaser from "phaser";
@@ -17,6 +17,7 @@ export class ClassSelectionScene extends Phaser.Scene {
     super({ key: SCENES.CLASS_SELECTION });
     this.sheet = new CharacterSheet();
     this._currentTierIndex = 0; // Empieza en Escalón I (0)
+    this._rejectedClasses = new Set(); // IDs de clases denegadas
   }
 
   create() {
@@ -79,45 +80,59 @@ export class ClassSelectionScene extends Phaser.Scene {
     this._container.add(sep1);
 
     // ── Lista de Clases del Tier ─────────────────────────────────────────────
-    const startY = 150;
-    const itemH  = 165;
-    const gapY   = 180;
+    const startY = 145;
+    const itemH  = 170;
+    const gapY   = 185;
 
     tierData.classes.forEach((cls, idx) => {
       const y = startY + idx * gapY;
       if (y + itemH > H - 110) return; // Evitar salir de pantalla en vertical
 
+      const isRejected = this._rejectedClasses.has(cls.id);
+
       // Tarjeta Panel
-      const bg = this.add.rectangle(cx, y + itemH / 2, W - 70, itemH, COLORS.UI_PANEL, 0.95)
-        .setStrokeStyle(3, COLORS.UI_BORDER)
-        .setInteractive({ useHandCursor: true });
+      const bg = this.add.rectangle(cx, y + itemH / 2, W - 70, itemH, isRejected ? 0x220c0c : COLORS.UI_PANEL, isRejected ? 0.85 : 0.95)
+        .setStrokeStyle(3, isRejected ? 0x661a1a : COLORS.UI_BORDER);
+      if (!isRejected) {
+        bg.setInteractive({ useHandCursor: true });
+      }
       this._container.add(bg);
 
-      // Línea 1: Nombre de la clase (Izquierda, dorado brillante)
+      // Línea 1: Nombre de la clase (Izquierda)
       const title = this.add.text(cx - 260, y + 26, cls.name, {
-        fontFamily: FONTS.PRIMARY, fontSize: "20px", color: "#f0c040", resolution: 2,
+        fontFamily: FONTS.PRIMARY, fontSize: "20px", color: isRejected ? "#885555" : "#f0c040", resolution: 2,
       }).setOrigin(0, 0.5);
       this._container.add(title);
 
-      // Línea 2: Requisitos exigidos (Debajo del nombre para evitar solapamientos)
-      const req = this.add.text(cx - 260, y + 54, `[ ${cls.reqText} ]`, {
-        fontFamily: FONTS.PRIMARY, fontSize: "13px", color: "#9d7bb0", resolution: 2,
+      // Sello [ RECHAZADO ] si fue denegado previamente
+      if (isRejected) {
+        const stamp = this.add.text(cx + 260, y + 26, "[ RECHAZADO ]", {
+          fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#ff4444", stroke: "#000000", strokeThickness: 3, resolution: 2,
+        }).setOrigin(1, 0.5);
+        this._container.add(stamp);
+      }
+
+      // Línea 2: Requisitos exigidos (con auto-wrapping para clases con muchos requisitos como Paladín)
+      const req = this.add.text(cx - 260, y + 58, `[ ${cls.reqText} ]`, {
+        fontFamily: FONTS.PRIMARY, fontSize: "13px", color: isRejected ? "#664444" : "#9d7bb0", wordWrap: { width: W - 140 }, resolution: 2,
       }).setOrigin(0, 0.5);
       this._container.add(req);
 
       // Línea 3: Descripción humorística narrativa
-      const desc = this.add.text(cx - 260, y + 110, cls.description, {
-        fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#f0e6d3", wordWrap: { width: W - 140 }, lineSpacing: 6, resolution: 2,
+      const desc = this.add.text(cx - 260, y + 116, cls.description, {
+        fontFamily: FONTS.PRIMARY, fontSize: "14px", color: isRejected ? "#776666" : "#f0e6d3", wordWrap: { width: W - 140 }, lineSpacing: 5, resolution: 2,
       }).setOrigin(0, 0.5);
       this._container.add(desc);
 
-      bg.on("pointerover", () => bg.setStrokeStyle(3, COLORS.GOLD));
-      bg.on("pointerout",  () => bg.setStrokeStyle(3, COLORS.UI_BORDER));
-      bg.on("pointerdown", () => {
-        if (!this._dialog.isVisible()) {
-          this._trySelectClass(cls, tierData);
-        }
-      });
+      if (!isRejected) {
+        bg.on("pointerover", () => bg.setStrokeStyle(3, COLORS.GOLD));
+        bg.on("pointerout",  () => bg.setStrokeStyle(3, COLORS.UI_BORDER));
+        bg.on("pointerdown", () => {
+          if (!this._dialog.isVisible()) {
+            this._trySelectClass(cls, tierData);
+          }
+        });
+      }
     });
 
     // ── Botón "Rendirse y mirar Clases Inferiores" ────────────────────────────
@@ -160,8 +175,12 @@ export class ClassSelectionScene extends Phaser.Scene {
         });
       }, "Tribunal del Gremio");
     } else {
-      // Rechazo sarcástico
-      this._dialog.show(`SOLICITUD RECHAZADA\n\n${cls.rejection}\n\nRequisito: ${cls.reqText}`, null, "Tribunal del Gremio");
+      // Rechazo sarcástico: registrar la clase como rechazada
+      this._rejectedClasses.add(cls.id);
+
+      this._dialog.show(`SOLICITUD RECHAZADA\n\n${cls.rejection}\n\nRequisito: ${cls.reqText}`, () => {
+        this._renderTierUI(); // Actualizar UI para estampar el sello [ RECHAZADO ]
+      }, "Tribunal del Gremio");
     }
   }
 }
