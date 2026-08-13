@@ -1,5 +1,5 @@
 /**
- * DialogBox.js — Modal de diálogo RPG gigante centrado en pantalla (720×1280 HD Vertical)
+ * DialogBox.js — Modal de diálogo RPG centrado con auto-ajuste de altura y tamaño de fuente para evitar desbordamientos.
  */
 
 import { COLORS, FONTS, TIMING } from "../utils/constants.js";
@@ -10,10 +10,15 @@ export class DialogBox {
     const W = scene.scale.width;
     const H = scene.scale.height;
 
-    const w = options.width ?? W - 80;
-    const h = options.height ?? 360;
+    const w = options.width ?? W - 70; // 650px de ancho disponible
+    const h = options.height ?? 460;   // 460px de alto holgado
     const x = options.x ?? (W - w) / 2;
     const y = options.y ?? (H - h) / 2;
+
+    this._w = w;
+    this._h = h;
+    this._x = x;
+    this._y = y;
 
     this._onComplete = null;
     this._typeTimer = null;
@@ -24,14 +29,14 @@ export class DialogBox {
 
     const DIALOG_DEPTH = 300;
 
-    // ── Telón de fondo oscuro Fullscreen ─────────────────────────────────────
+    // Telón de fondo oscuro Fullscreen
     this._backdrop = scene.add
-      .rectangle(W / 2, H / 2, W, H, 0x000000, 0.82)
+      .rectangle(W / 2, H / 2, W, H, 0x000000, 0.84)
       .setDepth(DIALOG_DEPTH - 1)
       .setInteractive() // Bloquea clicks hacia la prueba
       .setVisible(false);
 
-    // ── Fondo del modal centrado ─────────────────────────────────────────────
+    // Fondo del modal centrado
     this._bg = scene.add
       .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.98)
       .setOrigin(0, 0)
@@ -39,42 +44,42 @@ export class DialogBox {
       .setStrokeStyle(4, COLORS.GOLD)
       .setVisible(false);
 
-    // ── Header del hablante ──────────────────────────────────────────────────
+    // Header del hablante
     this._speakerBg = scene.add
-      .rectangle(x + 20, y - 24, 300, 44, COLORS.GOLD_DARK, 1)
+      .rectangle(x + 20, y - 24, 320, 46, COLORS.GOLD_DARK, 1)
       .setOrigin(0, 0)
       .setStrokeStyle(2, COLORS.GOLD)
       .setDepth(DIALOG_DEPTH + 1)
       .setVisible(false);
 
     this._speakerText = scene.add
-      .text(x + 36, y - 12, "", {
+      .text(x + 36, y - 11, "", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: "20px",
+        fontSize: "18px",
         color: "#ffffff",
         resolution: 2,
       })
       .setDepth(DIALOG_DEPTH + 2)
       .setVisible(false);
 
-    // ── Texto principal con typewriter ───────────────────────────────────────
+    // Texto principal con typewriter y auto-wrapping holgado
     this._bodyText = scene.add
-      .text(x + 30, y + 44, "", {
+      .text(x + 28, y + 42, "", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: "22px",
+        fontSize: "18px",
         color: "#f0e6d3",
-        wordWrap: { width: w - 60 },
+        wordWrap: { width: w - 56 },
         resolution: 2,
-        lineSpacing: 16,
+        lineSpacing: 10,
       })
       .setDepth(DIALOG_DEPTH + 1)
       .setVisible(false);
 
-    // ── Indicador "PULSA PARA AVANZAR ▼" ────────────────────────────────────
+    // Indicador "▼ PULSA PARA AVANZAR ▼" en la parte inferior interior
     this._continueIndicator = scene.add
-      .text(x + w / 2, y + h - 36, "▼ PULSA PARA AVANZAR ▼", {
+      .text(x + w / 2, y + h - 28, "▼ PULSA PARA AVANZAR ▼", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: "16px",
+        fontSize: "15px",
         color: "#d4a017",
         resolution: 2,
       })
@@ -97,6 +102,15 @@ export class DialogBox {
     this._charIndex = 0;
     this._isTyping = true;
     this._visible = true;
+
+    // Auto-ajuste de tamaño de letra si el texto es muy largo
+    if (text.length > 140 || text.split("\n").length > 4) {
+      this._bodyText.setFontSize("16px");
+      this._bodyText.setLineSpacing(8);
+    } else {
+      this._bodyText.setFontSize("19px");
+      this._bodyText.setLineSpacing(12);
+    }
 
     this._backdrop.setVisible(true);
     this._bg.setVisible(true);
