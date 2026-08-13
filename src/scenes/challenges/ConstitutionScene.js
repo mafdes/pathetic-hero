@@ -1,6 +1,6 @@
 /**
  * ConstitutionScene.js — Prueba de Constitución del Gremio (720×1280 HD Vertical)
- * Avance modal dialog corregido en diálogos y barra horizontal holgada.
+ * Incluye todos los sabotajes activos: fugas de gas verde, temblores continuos, movimiento de zona e inversión de gravedad.
  */
 
 import * as Phaser from "phaser";
@@ -26,10 +26,10 @@ const SUCCESS_COMMENTS = [
 ];
 
 const SABOTAGE_ANNOUNCEMENTS = {
-  3:  "Nivel 3. Fuga de gas neurotóxico verde.\nInhale profundamente. Es por el procedimiento.",
-  5:  "Nivel 5. Calambre muscular inducido.\nSus brazos empezarán a temblar involuntariamente.",
+  3:  "Nivel 3. Fuga de gas neurotóxico verde.\nRáfagas imprevistas desestabilizarán la aguja.",
+  5:  "Nivel 5. Calambre muscular inducido.\nSus brazos temblarán sin previo aviso.",
   7:  "Nivel 7. Desplazamiento de la dosis segura.\nLa zona de equilibrio ya no está fija.",
-  10: "Nivel 10. Sobredosis de toxina experimental.\nSuperarlo sería un insulto a la ciencia del Gremio.",
+  10: "Nivel 10. Inversiones de gravedad tóxica.\nLa física de la cámara ha sido saboteada.",
 };
 
 export class ConstitutionScene extends Phaser.Scene {
@@ -49,6 +49,10 @@ export class ConstitutionScene extends Phaser.Scene {
     this._holdTime      = 0;  // 0 a 1.5 segundos
     this._requiredHold  = 1.5;
     this._zoneT         = 0;
+
+    this._tremorTimer   = null;
+    this._gasBurstTimer = null;
+    this._gravityDir    = -1; // -1 cae abajo, +1 sube arriba
   }
 
   create() {
@@ -107,8 +111,8 @@ export class ConstitutionScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#ff4444", resolution: 2,
     }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
 
-    // Zona Segura Cómoda (140px de alto)
-    this._targetZone = this.add.rectangle(mX, mY, mW - 8, 140, 0x2d6a4f, 0.7)
+    // Zona Segura Cómoda (130px de alto)
+    this._targetZone = this.add.rectangle(mX, mY, mW - 8, 130, 0x2d6a4f, 0.7)
       .setDepth(DEPTHS.UI);
 
     // Aguja
@@ -143,7 +147,7 @@ export class ConstitutionScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#5a5a8a", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // Telón Oscuro
+    // Telón Oscuro desde el primer frame de carga
     this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x0a1a0f, 0.98)
       .setDepth(250)
       .setVisible(true);
@@ -169,7 +173,7 @@ export class ConstitutionScene extends Phaser.Scene {
       return;
     }
     if (!this._alive || this._inCountdown) return;
-    this._gaugeVal = Math.min(100, this._gaugeVal + 12);
+    this._gaugeVal = Math.min(100, this._gaugeVal + 14 * (this._gravityDir === -1 ? 1 : -1));
   }
 
   _beginLevel() {
@@ -184,9 +188,12 @@ export class ConstitutionScene extends Phaser.Scene {
 
   _prepareLevel() {
     if (!this._alive) return;
-    this._gaugeVal = 50;
-    this._holdTime = 0;
-    this._zoneT    = 0;
+    this._clearTimers();
+
+    this._gaugeVal   = 50;
+    this._holdTime   = 0;
+    this._zoneT      = 0;
+    this._gravityDir = -1;
     this._targetZone.setY(this._mY);
     this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
     this._inCountdown = true;
@@ -195,12 +202,36 @@ export class ConstitutionScene extends Phaser.Scene {
     this._coverPanel.setVisible(true);
 
     this._runCountdown(() => {
+      if (!this._alive) return;
       this._coverPanel.setVisible(false);
       this._inCountdown = false;
       this._holdTime = 0;
 
+      // ── SABOTAJE 1: RÁFAGAS DE GAS NEUROTÓXICO (Nivel 3+) ───────────────────
+      if (this._currentLevel >= 3) {
+        this._gasBurstTimer = this.time.addEvent({
+          delay: Phaser.Math.Between(1400, 2400),
+          loop: true,
+          callback: () => {
+            if (!this._alive || this._inCountdown) return;
+            this.cameras.main.flash(200, 45, 140, 60, true);
+            const burstPush = Phaser.Math.Between(-18, 18);
+            this._gaugeVal = Phaser.Math.Clamp(this._gaugeVal + burstPush, 10, 90);
+          },
+        });
+      }
+
+      // ── SABOTAJE 2: CALAMBRES MUSCULARES Y TEMBLOR CONTINUO (Nivel 5+) ──────
       if (this._currentLevel >= 5) {
-        this._triggerTremor();
+        this._tremorTimer = this.time.addEvent({
+          delay: Phaser.Math.Between(1000, 1800),
+          loop: true,
+          callback: () => {
+            if (!this._alive || this._inCountdown) return;
+            this.cameras.main.shake(200, 0.007);
+            this._gaugeVal = Phaser.Math.Clamp(this._gaugeVal + Phaser.Math.Between(-12, 12), 15, 85);
+          },
+        });
       }
     });
   }
@@ -237,10 +268,9 @@ export class ConstitutionScene extends Phaser.Scene {
     next();
   }
 
-  _triggerTremor() {
-    if (!this._alive || this._inCountdown) return;
-    this.cameras.main.shake(250, 0.006);
-    this._gaugeVal = Phaser.Math.Clamp(this._gaugeVal + Phaser.Math.Between(-10, 10), 20, 80);
+  _clearTimers() {
+    if (this._tremorTimer) { this._tremorTimer.remove(); this._tremorTimer = null; }
+    if (this._gasBurstTimer) { this._gasBurstTimer.remove(); this._gasBurstTimer = null; }
   }
 
   update(time, delta) {
@@ -249,11 +279,12 @@ export class ConstitutionScene extends Phaser.Scene {
     const dt = delta / 1000;
     const level = this._currentLevel;
 
-    // Empuje constante hacia abajo
-    const decaySpeed = 15 + level * 1.5;
-    this._gaugeVal = Math.max(0, this._gaugeVal - decaySpeed * dt);
+    // Empuje constante de toxina
+    const decaySpeed = 16 + level * 1.6;
+    this._gaugeVal += decaySpeed * this._gravityDir * dt;
+    this._gaugeVal = Phaser.Math.Clamp(this._gaugeVal, 0, 100);
 
-    // Colapso por caer al fondo
+    // Colapso si cae al fondo absoluto (<= 0)
     if (this._gaugeVal <= 0) {
       this._failLevel();
       return;
@@ -266,10 +297,10 @@ export class ConstitutionScene extends Phaser.Scene {
 
     this._needle.setY(nY);
 
-    // Oscilación de la zona segura a partir de Nivel 7
+    // ── SABOTAJE 3: DESPLAZAMIENTO OSCILANTE DE ZONA SEGUDA (Nivel 7+) ────────
     if (level >= 7) {
       this._zoneT += dt;
-      const offset = Math.sin(this._zoneT * (1.0 + level * 0.1)) * (20 + level * 3);
+      const offset = Math.sin(this._zoneT * (1.2 + level * 0.12)) * (35 + level * 3);
       this._targetZone.setY(this._mY + offset);
     }
 
@@ -295,6 +326,7 @@ export class ConstitutionScene extends Phaser.Scene {
   _passLevel() {
     if (this._inCountdown || !this._alive) return;
     this._inCountdown = true;
+    this._clearTimers();
     this._score = this._currentLevel;
 
     if (this._currentLevel >= this._maxLevels) {
@@ -309,6 +341,7 @@ export class ConstitutionScene extends Phaser.Scene {
 
   _failLevel() {
     this._alive = false;
+    this._clearTimers();
     this._coverPanel.setVisible(true);
     const comment = Phaser.Math.RND.pick(FAIL_COMMENTS);
     this._dialog.show(`FIN DE LA PRUEBA\n\n${comment}\n\nPuntuación: ${this._score} / 20\n\n${getVerdict(this._score)}`, () => {
@@ -318,6 +351,7 @@ export class ConstitutionScene extends Phaser.Scene {
 
   _endGame(perfect = false) {
     this._alive = false;
+    this._clearTimers();
     this._coverPanel.setVisible(true);
     const finalScore = this._score;
     this._dialog.show(`¡RESISTENCIA SUPERADA!\n\nPuntuación: ${finalScore} / 20\n\n${getVerdict(finalScore)}`, () => {
