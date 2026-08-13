@@ -104,10 +104,8 @@ export class AgilityScene extends Phaser.Scene {
     if (!this._alive) return;
     this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
     this._inCountdown = true;
-    this._coverPanel.setVisible(true);
 
     this._runCountdown(() => {
-      this._coverPanel.setVisible(false);
       this._inCountdown = false;
       this._spawnPrompt();
     });

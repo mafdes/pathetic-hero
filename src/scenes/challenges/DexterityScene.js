@@ -270,11 +270,8 @@ export class DexterityScene extends Phaser.Scene {
     this._inCountdown = true;
     this._inputCooldown = true;
 
-    this._coverPanel.setVisible(true);
-
     this._runCountdown(() => {
       if (!this._alive) return;
-      this._coverPanel.setVisible(false);
       this._inCountdown   = false;
       this._inputCooldown = false;
 

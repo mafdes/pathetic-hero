@@ -136,7 +136,6 @@ export class ConstitutionScene extends Phaser.Scene {
   _beginLevel() {
     const announcement = SABOTAGE_ANNOUNCEMENTS[this._currentLevel];
     if (announcement) {
-      this._coverPanel.setVisible(true);
       this._dialog.show(announcement, () => this._prepareLevel(), "Examinador Rotval");
     } else {
       this._prepareLevel();
@@ -150,10 +149,8 @@ export class ConstitutionScene extends Phaser.Scene {
     this._targetZone.setY(this._mY);
     this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
     this._inCountdown = true;
-    this._coverPanel.setVisible(true);
 
     this._runCountdown(() => {
-      this._coverPanel.setVisible(false);
       this._inCountdown = false;
       this._holdTime = 0;
 
