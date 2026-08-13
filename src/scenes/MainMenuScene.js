@@ -4,13 +4,11 @@
 
 import * as Phaser from "phaser";
 import { COLORS, FONTS, FONT_SIZES, SCENES, TIMING, DEPTHS } from "../utils/constants.js";
-import { SaveManager } from "../systems/SaveManager.js";
 import { PixelButton } from "../ui/PixelButton.js";
 
 const MENU_ITEMS = [
-  { id: "new",      label: "NUEVA PARTIDA" },
-  { id: "continue", label: "CONTINUAR"     },
-  { id: "options",  label: "OPCIONES"      },
+  { id: "new",     label: "NUEVA PARTIDA" },
+  { id: "options", label: "OPCIONES"      },
 ];
 
 export class MainMenuScene extends Phaser.Scene {
@@ -18,14 +16,11 @@ export class MainMenuScene extends Phaser.Scene {
     super({ key: SCENES.MAIN_MENU });
     this._selectedIndex = 0;
     this._buttons = [];
-    this._hasSave = false;
   }
 
   create() {
     const W = this.scale.width;
     const H = this.scale.height;
-
-    this._hasSave = SaveManager.hasSave();
 
     this.cameras.main.setBackgroundColor(COLORS.BG_DARK);
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
@@ -75,7 +70,6 @@ export class MainMenuScene extends Phaser.Scene {
     const gap = 70;
 
     this._buttons = MENU_ITEMS.map((item, i) => {
-      const enabled = item.id !== "continue" || this._hasSave;
       const btn = new PixelButton(
         this,
         W / 2,
@@ -84,7 +78,6 @@ export class MainMenuScene extends Phaser.Scene {
         () => this._onSelect(item.id),
         { width: 340, height: 48, fontSize: FONT_SIZES.BODY }
       );
-      btn.setEnabled(enabled);
       return btn;
     });
 
@@ -107,10 +100,7 @@ export class MainMenuScene extends Phaser.Scene {
 
   _moveSelection(dir) {
     const total = MENU_ITEMS.length;
-    let next = (this._selectedIndex + dir + total) % total;
-    if (MENU_ITEMS[next].id === "continue" && !this._hasSave) {
-      next = (next + dir + total) % total;
-    }
+    const next = (this._selectedIndex + dir + total) % total;
     this._selectedIndex = next;
     this._updateSelection();
   }
@@ -123,9 +113,7 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   _confirmSelection() {
-    const item = MENU_ITEMS[this._selectedIndex];
-    if (item.id === "continue" && !this._hasSave) return;
-    this._onSelect(item.id);
+    this._onSelect(MENU_ITEMS[this._selectedIndex].id);
   }
 
   _onSelect(id) {
@@ -133,11 +121,7 @@ export class MainMenuScene extends Phaser.Scene {
     this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
       switch (id) {
         case "new":
-          SaveManager.clear();
           this.scene.start(SCENES.CONTROLS, { mode: "new" });
-          break;
-        case "continue":
-          this.scene.start(SCENES.GUILD_REPORT);
           break;
         case "options":
           this.scene.start(SCENES.OPTIONS);
