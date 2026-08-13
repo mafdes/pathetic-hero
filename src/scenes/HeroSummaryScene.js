@@ -1,6 +1,6 @@
 /**
  * HeroSummaryScene.js — Ficha del Héroe y Antesala de la Mazmorra (720×1280 HD Vertical)
- * Muestra el resumen completo del héroe: Nombre (con selector/generador), Clase elegida, Atributos y Veredicto.
+ * Muestra el resumen oficial del héroe registrado: Nombre definitivo, Clase asignada, Atributos y Veredicto.
  */
 
 import * as Phaser from "phaser";
@@ -12,7 +12,7 @@ import { CharacterSheet } from "../systems/CharacterSheet.js";
 import { SaveManager } from "../systems/SaveManager.js";
 import { CLASS_TIERS } from "../data/classes.js";
 import { PixelButton } from "../ui/PixelButton.js";
-import { generateHeroName, getVerdict } from "../utils/helpers.js";
+import { getVerdict } from "../utils/helpers.js";
 
 export class HeroSummaryScene extends Phaser.Scene {
   constructor() {
@@ -53,38 +53,25 @@ export class HeroSummaryScene extends Phaser.Scene {
     const sep1 = this.add.rectangle(cx, 120, W - 60, 3, COLORS.GOLD_DARK);
     this._container.add(sep1);
 
-    // ── SECCIÓN 1: NOMBRE DEL HÉROE Y SELECTOR ALEATORIO / EDICIÓN ─────────────
-    const nameBoxY = 175;
-    const nameBox = this.add.rectangle(cx, nameBoxY, W - 70, 100, COLORS.UI_PANEL, 0.95)
+    // ── SECCIÓN 1: NOMBRE DEL HÉROE REGISTRADO ────────────────────────────────
+    const nameBoxY = 165;
+    const nameBoxW = W - 70;
+    const nameBoxH = 70;
+
+    const nameBox = this.add.rectangle(cx, nameBoxY, nameBoxW, nameBoxH, COLORS.UI_PANEL, 0.95)
       .setStrokeStyle(3, COLORS.GOLD);
     this._container.add(nameBox);
 
-    this._nameText = this.add.text(cx - 260, nameBoxY - 20, `HÉROE:  "${this.sheet.name}"`, {
-      fontFamily: FONTS.PRIMARY, fontSize: "19px", color: "#f0c040", resolution: 2,
-    }).setOrigin(0, 0.5);
+    const nameStr = `ASPIRANTE REGISTRADO:  "${this.sheet.name}"`;
+    const fontSz  = nameStr.length > 32 ? "14px" : nameStr.length > 24 ? "16px" : "18px";
+
+    this._nameText = this.add.text(cx, nameBoxY, nameStr, {
+      fontFamily: FONTS.PRIMARY, fontSize: fontSz, color: "#f0c040", resolution: 2, align: "center", wordWrap: { width: nameBoxW - 40 },
+    }).setOrigin(0.5);
     this._container.add(this._nameText);
 
-    // Botones de Selector de Nombre
-    const randNameBtn = this.add.text(cx - 260, nameBoxY + 22, "[ 🎲 RANDOM NOMBRE ]", {
-      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#4caf77", resolution: 2,
-    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
-    this._container.add(randNameBtn);
-
-    randNameBtn.on("pointerover", () => randNameBtn.setColor("#ffffff"));
-    randNameBtn.on("pointerout",  () => randNameBtn.setColor("#4caf77"));
-    randNameBtn.on("pointerdown", () => this._randomizeName());
-
-    const editNameBtn = this.add.text(cx + 260, nameBoxY + 22, "[ ✏️ CAMBIAR NOMBRE ]", {
-      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#60a5fa", resolution: 2,
-    }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
-    this._container.add(editNameBtn);
-
-    editNameBtn.on("pointerover", () => editNameBtn.setColor("#ffffff"));
-    editNameBtn.on("pointerout",  () => editNameBtn.setColor("#60a5fa"));
-    editNameBtn.on("pointerdown", () => this._editName());
-
-    // ── SECCIÓN 2: CLASE SELECCIONADA Y SATIRA ────────────────────────────────
-    const classBoxY = 320;
+    // ── SECCIÓN 2: CLASE SELECCIONADA Y SÁTIRA ────────────────────────────────
+    const classBoxY = 295;
     const heroClassData = this._getHeroClassData(this.sheet.heroClass);
 
     const classBox = this.add.rectangle(cx, classBoxY, W - 70, 140, COLORS.UI_PANEL, 0.95)
@@ -102,7 +89,7 @@ export class HeroSummaryScene extends Phaser.Scene {
     this._container.add(classDesc);
 
     // ── SECCIÓN 3: ATRIBUTOS Y DICTAMEN DEL TRIBUNAL ─────────────────────────
-    const statsBoxY = 570;
+    const statsBoxY = 550;
     const statsBox = this.add.rectangle(cx, statsBoxY, W - 70, 310, COLORS.UI_PANEL, 0.95)
       .setStrokeStyle(3, COLORS.UI_BORDER);
     this._container.add(statsBox);
@@ -161,25 +148,6 @@ export class HeroSummaryScene extends Phaser.Scene {
     this._container.add(changeClassBtn._bg);
     this._container.add(changeClassBtn._label);
     this._container.add(changeClassBtn._cursor);
-  }
-
-  _randomizeName() {
-    this.sheet.name = generateHeroName();
-    SaveManager.save(this.sheet);
-    if (this._nameText) {
-      this._nameText.setText(`HÉROE:  "${this.sheet.name}"`);
-    }
-  }
-
-  _editName() {
-    const inputName = window.prompt("Introduce el nombre para tu héroe:", this.sheet.name);
-    if (inputName && inputName.trim().length > 0) {
-      this.sheet.name = inputName.trim().slice(0, 24);
-      SaveManager.save(this.sheet);
-      if (this._nameText) {
-        this._nameText.setText(`HÉROE:  "${this.sheet.name}"`);
-      }
-    }
   }
 
   _getHeroClassData(classId) {
