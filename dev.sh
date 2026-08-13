@@ -12,6 +12,14 @@
 #   ./dev.sh preview  → Previsualizar el build de producción
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ── Cargar nvm si está disponible (para que npm esté en el PATH) ─────────────
+export NVM_DIR="$HOME/.nvm"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  source "$NVM_DIR/nvm.sh"
+elif [ -s "/opt/homebrew/opt/nvm/nvm.sh" ]; then
+  source "/opt/homebrew/opt/nvm/nvm.sh"
+fi
+
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -47,8 +55,9 @@ print_banner() {
 }
 
 check_node() {
-  if ! command -v node &>/dev/null; then
-    echo -e "${RED}✗ Node.js no encontrado. Instálalo desde https://nodejs.org${RESET}"
+  if ! command -v npm &>/dev/null; then
+    echo -e "${RED}✗ npm no encontrado. Instala Node.js 18+ desde https://nodejs.org${RESET}"
+    echo -e "${YELLOW}  Si usas nvm: nvm install 20 && nvm use 20${RESET}"
     exit 1
   fi
 
@@ -57,13 +66,14 @@ check_node() {
     echo -e "${RED}✗ Node.js 18+ requerido. Versión actual: $(node --version)${RESET}"
     exit 1
   fi
-  echo -e "${GREEN}✓ Node.js $(node --version)${RESET}"
+  echo -e "${GREEN}✓ Node.js $(node --version) / npm $(npm --version)${RESET}"
 }
 
 check_deps() {
   if [ ! -d "node_modules" ]; then
     echo -e "${YELLOW}⚙ node_modules no encontrado. Instalando dependencias...${RESET}"
     npm install
+    npm approve-scripts esbuild 2>/dev/null || true
     echo -e "${GREEN}✓ Dependencias instaladas${RESET}"
   else
     echo -e "${GREEN}✓ Dependencias OK${RESET}"
