@@ -109,8 +109,10 @@ export class StrengthScene extends Phaser.Scene {
     this._power = 0;
     this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
     this._inCountdown = true;
+    this._coverPanel.setVisible(true);
 
     this._runCountdown(() => {
+      this._coverPanel.setVisible(false);
       this._inCountdown = false;
       this._levelTime = 4.5;
     });

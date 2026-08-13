@@ -1,6 +1,6 @@
 /**
  * DexterityScene.js — Prueba de Destreza del Gremio (720×1280 HD Vertical)
- * Dificultad equilibrada y jugable.
+ * Incluye telón oscuro casi negro en la cuenta atrás para tapar la prueba completamente.
  */
 
 import * as Phaser from "phaser";
@@ -156,6 +156,11 @@ export class DexterityScene extends Phaser.Scene {
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
+    // Telón oscuro CASI NEGRO para tapar la prueba en la cuenta atrás
+    this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x0d0613, 0.98)
+      .setDepth(250)
+      .setVisible(false);
+
     this._countdownText = this.add.text(W / 2, H / 2, "", {
       fontFamily: FONTS.PRIMARY,
       fontSize: "120px",
@@ -198,7 +203,6 @@ export class DexterityScene extends Phaser.Scene {
     });
   }
 
-  // Curva de dificultad justa y alcanzable
   _getLevelConfig(level) {
     const t    = (level - 1) / 19;
     const barW = this._barW;
@@ -222,6 +226,7 @@ export class DexterityScene extends Phaser.Scene {
   _beginLevel() {
     const announcement = SABOTAGE_ANNOUNCEMENTS[this._currentLevel];
     if (announcement) {
+      this._coverPanel.setVisible(true);
       this._dialog.show(announcement, () => this._prepareAndStartLevel(), "Examinador Rotval");
     } else {
       this._prepareAndStartLevel();
@@ -270,8 +275,11 @@ export class DexterityScene extends Phaser.Scene {
     this._inCountdown = true;
     this._inputCooldown = true;
 
+    this._coverPanel.setVisible(true);
+
     this._runCountdown(() => {
       if (!this._alive) return;
+      this._coverPanel.setVisible(false);
       this._inCountdown   = false;
       this._inputCooldown = false;
 
@@ -321,11 +329,11 @@ export class DexterityScene extends Phaser.Scene {
       this.tweens.add({
         targets: this._countdownText,
         scale: 1.0,
-        duration: isYa ? 200 : 320,
+        duration: isYa ? 200 : 350,
         ease: "Quad.easeOut",
         onComplete: () => {
           stepIndex++;
-          this.time.delayedCall(isYa ? 150 : 250, showStep);
+          this.time.delayedCall(isYa ? 150 : 300, showStep);
         },
       });
     };
@@ -353,6 +361,7 @@ export class DexterityScene extends Phaser.Scene {
     this._goldZone.setVisible(true);
     this._speedBurstOn = false;
     if (this._countdownText) this._countdownText.setVisible(false);
+    if (this._coverPanel)    this._coverPanel.setVisible(false);
   }
 
   update(time, delta) {
@@ -421,6 +430,7 @@ export class DexterityScene extends Phaser.Scene {
 
   _showFeedback(hit) {
     this._clearLevelTimers();
+    this._coverPanel.setVisible(true);
 
     const comment  = Phaser.Math.RND.pick(hit ? SUCCESS_COMMENTS : FAIL_COMMENTS);
     const flashHex = hit ? COLORS.SUCCESS_BRIGHT : COLORS.DANGER_BRIGHT;
@@ -454,6 +464,7 @@ export class DexterityScene extends Phaser.Scene {
   _endGame(perfect = false) {
     this._alive = false;
     this._clearLevelTimers();
+    this._coverPanel.setVisible(true);
 
     const finalScore = this._score;
     const msg = perfect
