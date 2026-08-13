@@ -40,21 +40,21 @@ export class IntroScene extends Phaser.Scene {
         .setDisplaySize(W, H).setAlpha(0.35).setDepth(DEPTHS.BG);
     }
 
-    // Texto principal formateado para pantalla panorámica (960x540)
-    this._currentLineText = this.add.text(W / 2, H / 2 - 40, "", {
+    // Texto principal GRANDE y bien distribuido para ocupar la pantalla completa
+    this._currentLineText = this.add.text(W / 2, H / 2 - 30, "", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.BODY,
+      fontSize: "22px", // Mucho más grande y visible
       color: "#f0e6d3",
-      resolution: 2,
+      resolution: 2,    // Renderizado en alta resolución para eliminar pixelado
       align: "center",
-      wordWrap: { width: 780 },
-      lineSpacing: 14,
+      wordWrap: { width: 840 },
+      lineSpacing: 20,  // Interlineado amplio y elegante
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
     // Hint "SKIP"
     this._skipHint = this.add.text(W - 24, H - 24, "[ CUALQUIER TECLA — SKIP ]", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.TINY,
+      fontSize: FONT_SIZES.SMALL,
       color: "#6a4e8a",
       resolution: 2,
     }).setOrigin(1, 1).setDepth(DEPTHS.UI);
@@ -116,7 +116,7 @@ export class IntroScene extends Phaser.Scene {
     const H = this.scale.height;
     const cont = this.add.text(W / 2, H - 48, "— PULSA PARA CONTINUAR —", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: FONT_SIZES.SMALL,
+      fontSize: FONT_SIZES.BODY,
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
