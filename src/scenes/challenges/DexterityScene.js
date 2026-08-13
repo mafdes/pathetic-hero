@@ -148,8 +148,16 @@ export class DexterityScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#3d3d6b", resolution: 2,
     }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
 
-    // Hint de control
-    this.add.text(W / 2, barY + 80, "[ ESPACIO / ENTER / CLICK ]", {
+    // Hint de control según modo de entrada seleccionado
+    const inputMode = this.registry.get("inputMode") ?? "keyboard";
+    let hintText = "[ ESPACIO ]";
+    if (inputMode === "mouse") {
+      hintText = "[ CLICK IZQUIERDO ]";
+    } else if (inputMode === "touch") {
+      hintText = "[ TOCA LA PANTALLA ]";
+    }
+
+    this.add.text(W / 2, barY + 80, hintText, {
       fontFamily: FONTS.PRIMARY,
       fontSize: "16px",
       color: "#5a5a8a",
