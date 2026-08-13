@@ -29,6 +29,7 @@ const config = {
   scale: {
     mode: Phaser.Scale.FIT,    // Escala manteniendo relación de aspecto
     autoCenter: Phaser.Scale.CENTER_BOTH,
+    expandParent: true,
   },
   physics: {
     default: "arcade",
