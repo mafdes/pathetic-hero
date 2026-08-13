@@ -1,5 +1,5 @@
 /**
- * MainMenuScene.js — Menú principal (540×960 Vertical)
+ * MainMenuScene.js — Menú principal (720×1280 HD Vertical)
  */
 
 import * as Phaser from "phaser";
@@ -31,26 +31,26 @@ export class MainMenuScene extends Phaser.Scene {
         .setDisplaySize(W, H).setAlpha(0.3).setDepth(DEPTHS.BG);
     }
 
-    // ── Cabecera Vertical ──────────────────────────────────────────────────
-    this.add.text(W / 2, 140, "PATHETIC", {
+    // ── Cabecera Vertical HD ──────────────────────────────────────────────────
+    this.add.text(W / 2, 180, "PATHETIC", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "40px",
+      fontSize: "52px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    this.add.text(W / 2, 210, "HERO", {
+    this.add.text(W / 2, 270, "HERO", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "36px",
+      fontSize: "44px",
       color: "#f0e6d3",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    this.add.rectangle(W / 2, 260, W - 60, 2, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
+    this.add.rectangle(W / 2, 330, W - 100, 3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
 
-    const subtitle = this.add.text(W / 2, 290, "~ Un RPG para valientes mediocres ~", {
+    const subtitle = this.add.text(W / 2, 370, "~ Un RPG para valientes mediocres ~", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "12px",
+      fontSize: "16px",
       color: "#6a4e8a",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
@@ -64,11 +64,11 @@ export class MainMenuScene extends Phaser.Scene {
       ease: "Sine.easeInOut",
     });
 
-    this.add.rectangle(W / 2, 320, W - 60, 2, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
+    this.add.rectangle(W / 2, 410, W - 100, 3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
 
-    // ── Botones ───────────────────────────────────────────────────────────────
-    const startY = 460;
-    const gap = 80;
+    // ── Botones HD ────────────────────────────────────────────────────────────
+    const startY = 600;
+    const gap = 110;
 
     this._buttons = MENU_ITEMS.map((item, i) => {
       const btn = new PixelButton(
@@ -77,7 +77,7 @@ export class MainMenuScene extends Phaser.Scene {
         startY + i * gap,
         item.label,
         () => this._onSelect(item.id),
-        { width: 380, height: 56, fontSize: "16px" }
+        { width: 500, height: 76, fontSize: "22px" }
       );
       return btn;
     });
@@ -85,9 +85,9 @@ export class MainMenuScene extends Phaser.Scene {
     this._updateSelection();
 
     // ── Versión ───────────────────────────────────────────────────────────────
-    this.add.text(W / 2, H - 36, "v0.1.0 — Pathetic Hero", {
+    this.add.text(W / 2, H - 50, "v0.1.0 — Pathetic Hero", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "10px",
+      fontSize: "14px",
       color: "#3d3d6b",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);

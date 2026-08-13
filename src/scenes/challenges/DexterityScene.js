@@ -1,5 +1,5 @@
 /**
- * DexterityScene.js — Prueba de Destreza del Gremio (540×960 Vertical)
+ * DexterityScene.js — Prueba de Destreza del Gremio (720×1280 HD Vertical)
  */
 
 import * as Phaser from "phaser";
@@ -71,56 +71,56 @@ export class DexterityScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.BG_DEEP);
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
-    // ── HUD superior ──────────────────────────────────────────────────────────
-    this.add.rectangle(W / 2, 40, W, 80, COLORS.UI_PANEL, 0.9)
+    // ── HUD superior HD ──────────────────────────────────────────────────────
+    this.add.rectangle(W / 2, 50, W, 100, COLORS.UI_PANEL, 0.9)
       .setDepth(DEPTHS.UI_BG);
 
-    this.add.text(W / 2, 26, "PRUEBA: DESTREZA", {
+    this.add.text(W / 2, 34, "PRUEBA: DESTREZA", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "18px",
+      fontSize: "26px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
-    this._levelText = this.add.text(W / 2, 54, "NIVEL 1 / 20", {
+    this._levelText = this.add.text(W / 2, 72, "NIVEL 1 / 20", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "14px",
+      fontSize: "18px",
       color: "#f0e6d3",
       resolution: 2,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
     // Instrucción
-    this.add.text(W / 2, 115, "PULSA cuando el cursor\ncruce la zona dorada", {
+    this.add.text(W / 2, 160, "PULSA cuando el cursor\ncruce la zona dorada", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "13px",
+      fontSize: "18px",
       color: "#6a4e8a",
       resolution: 2,
       align: "center",
-      lineSpacing: 6,
+      lineSpacing: 10,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // ── Barra de precisión horizontal en vertical canvas ──────────────────────
-    const barY = H / 2 - 60;
-    const barW = W - 60; // 480px ancho en canvas de 540px
-    const barH = 48;
-    const barX = 30;
+    // ── Barra de precisión HD (720px ancho) ──────────────────────────────────
+    const barY = H / 2 - 80;
+    const barW = W - 80; // 640px de ancho
+    const barH = 60;
+    const barX = 40;
 
     // Marco
     this.add.rectangle(W / 2, barY, barW, barH, COLORS.BG_STONE, 1)
-      .setStrokeStyle(2, COLORS.GOLD_DARK).setDepth(DEPTHS.UI_BG);
+      .setStrokeStyle(3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI_BG);
 
     // Zona dorada
-    this._goldZone = this.add.rectangle(W / 2, barY, 80, barH - 6, COLORS.GOLD, 0.6)
+    this._goldZone = this.add.rectangle(W / 2, barY, 110, barH - 8, COLORS.GOLD, 0.6)
       .setDepth(DEPTHS.UI);
 
     // Señuelos rojos
-    this._decoyLeft  = this.add.rectangle(0, barY, 0, barH - 6, COLORS.DANGER, 0.5)
+    this._decoyLeft  = this.add.rectangle(0, barY, 0, barH - 8, COLORS.DANGER, 0.5)
       .setDepth(DEPTHS.UI).setVisible(false);
-    this._decoyRight = this.add.rectangle(0, barY, 0, barH - 6, COLORS.DANGER, 0.5)
+    this._decoyRight = this.add.rectangle(0, barY, 0, barH - 8, COLORS.DANGER, 0.5)
       .setDepth(DEPTHS.UI).setVisible(false);
 
     // Indicador (cursor móvil)
-    this._indicator = this.add.rectangle(barX, barY, 12, barH, COLORS.WHITE, 1)
+    this._indicator = this.add.rectangle(barX, barY, 16, barH, COLORS.WHITE, 1)
       .setDepth(DEPTHS.UI + 1);
 
     this._barX    = barX;
@@ -130,33 +130,33 @@ export class DexterityScene extends Phaser.Scene {
     this._barMidX = barX + barW / 2;
 
     // Extremos
-    this.add.text(barX - 12, barY, "◄", {
-      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#3d3d6b", resolution: 2,
+    this.add.text(barX - 16, barY, "◄", {
+      fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#3d3d6b", resolution: 2,
     }).setOrigin(1, 0.5).setDepth(DEPTHS.UI);
-    this.add.text(barX + barW + 12, barY, "►", {
-      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#3d3d6b", resolution: 2,
+    this.add.text(barX + barW + 16, barY, "►", {
+      fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#3d3d6b", resolution: 2,
     }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
 
     // Hint de control
-    this.add.text(W / 2, barY + 60, "[ ESPACIO / Z / CLICK ]", {
+    this.add.text(W / 2, barY + 80, "[ ESPACIO / Z / CLICK ]", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "12px",
+      fontSize: "16px",
       color: "#5a5a8a",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
     // ── Texto de Cuenta Atrás (3... 2... 1... ¡YA!) ─────────────────────────
-    this._countdownText = this.add.text(W / 2, barY - 70, "", {
+    this._countdownText = this.add.text(W / 2, barY - 100, "", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "36px",
+      fontSize: "48px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI + 2).setVisible(false);
 
-    // ── Diálogo del Examinador en la parte inferior ─────────────────────────
+    // ── Diálogo del Examinador ───────────────────────────────────────────────
     this._dialog = new DialogBox(this, {
-      y: H - 220,
-      height: 200,
+      y: H - 290,
+      height: 260,
       speaker: "Examinador Rotval",
     });
 
@@ -177,8 +177,8 @@ export class DexterityScene extends Phaser.Scene {
     const barW = this._barW;
 
     return {
-      speed:         160 + t * 400,
-      goldWidth:     Math.max(28, Math.round(barW * 0.21 - t * barW * 0.14)),
+      speed:         200 + t * 500,
+      goldWidth:     Math.max(36, Math.round(barW * 0.21 - t * barW * 0.14)),
       zoneMoving:    level >= 3,
       zoneMoveAmp:   level >= 3 ? Math.min(barW * 0.06 + (level - 3) * barW * 0.012, barW * 0.28) : 0,
       zoneMoveFreq:  level >= 3 ? 0.5 + (level - 3) * 0.06 : 0,

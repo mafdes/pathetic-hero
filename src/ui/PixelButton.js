@@ -1,5 +1,5 @@
 /**
- * PixelButton.js — Botón reutilizable con estética pixel art retro (540×960 Vertical)
+ * PixelButton.js — Botón reutilizable (720×1280 HD Vertical)
  */
 
 import { COLORS, FONTS, FONT_SIZES, DEPTHS } from "../utils/constants.js";
@@ -12,9 +12,9 @@ export class PixelButton {
    * @param {string} label
    * @param {Function} onClick
    * @param {object} [options]
-   * @param {number} [options.width=360]
-   * @param {number} [options.height=54]
-   * @param {string} [options.fontSize="16px"]
+   * @param {number} [options.width=500]
+   * @param {number} [options.height=74]
+   * @param {string} [options.fontSize="22px"]
    * @param {boolean} [options.selected=false]
    */
   constructor(scene, x, y, label, onClick, options = {}) {
@@ -23,15 +23,15 @@ export class PixelButton {
     this._selected = options.selected ?? false;
     this._enabled = true;
 
-    const w = options.width  ?? 360;
-    const h = options.height ?? 54;
+    const w = options.width  ?? 500;
+    const h = options.height ?? 74;
     const fs = options.fontSize ?? FONT_SIZES.BODY;
 
     // ── Fondo ────────────────────────────────────────────────────────────────
     this._bg = scene.add
       .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.94)
       .setDepth(DEPTHS.UI)
-      .setStrokeStyle(2, COLORS.GOLD_DARK)
+      .setStrokeStyle(3, COLORS.GOLD_DARK)
       .setInteractive({ useHandCursor: true });
 
     // ── Etiqueta ─────────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ export class PixelButton {
 
     // ── Cursor ► ─────────────────────────────────────────────────────────────
     this._cursor = scene.add
-      .text(x - w / 2 + 16, y, "►", {
+      .text(x - w / 2 + 20, y, "►", {
         fontFamily: FONTS.PRIMARY,
         fontSize: fs,
         color: "#d4a017",
@@ -77,7 +77,7 @@ export class PixelButton {
 
   _updateVisuals() {
     const active = this._selected && this._enabled;
-    this._bg.setStrokeStyle(2, active ? COLORS.GOLD : COLORS.GOLD_DARK);
+    this._bg.setStrokeStyle(3, active ? COLORS.GOLD : COLORS.GOLD_DARK);
     this._label.setColor(
       !this._enabled  ? "#555555" :
       this._selected  ? "#f0c040" : "#f0e6d3"

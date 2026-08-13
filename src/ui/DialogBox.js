@@ -1,5 +1,5 @@
 /**
- * DialogBox.js — Cuadro de diálogo estilo RPG con efecto typewriter (540×960 Vertical)
+ * DialogBox.js — Cuadro de diálogo estilo RPG con efecto typewriter (720×1280 HD Vertical)
  */
 
 import { COLORS, FONTS, FONT_SIZES, TIMING, DEPTHS } from "../utils/constants.js";
@@ -10,10 +10,10 @@ export class DialogBox {
     const W = scene.scale.width;
     const H = scene.scale.height;
 
-    const x = options.x ?? 20;
-    const w = options.width ?? W - 40;
-    const h = options.height ?? 200;
-    const y = options.y ?? H - h - 20;
+    const x = options.x ?? 30;
+    const w = options.width ?? W - 60;
+    const h = options.height ?? 260;
+    const y = options.y ?? H - h - 30;
 
     this._onComplete = null;
     this._typeTimer = null;
@@ -24,17 +24,17 @@ export class DialogBox {
 
     // ── Fondo del panel ─────────────────────────────────────────────────────
     this._bg = scene.add
-      .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.94)
+      .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.95)
       .setOrigin(0, 0)
       .setDepth(DEPTHS.DIALOG)
-      .setStrokeStyle(2, COLORS.GOLD)
+      .setStrokeStyle(3, COLORS.GOLD)
       .setVisible(false);
 
     // ── Nombre del hablante ──────────────────────────────────────────────────
     this._speakerText = scene.add
-      .text(x + 16, y - 24, "", {
+      .text(x + 24, y - 32, "", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: "14px",
+        fontSize: "18px",
         color: "#d4a017",
         resolution: 2,
       })
@@ -43,22 +43,22 @@ export class DialogBox {
 
     // ── Texto principal con typewriter ───────────────────────────────────────
     this._bodyText = scene.add
-      .text(x + 16, y + 20, "", {
+      .text(x + 24, y + 26, "", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: "14px",
+        fontSize: "20px",
         color: "#f0e6d3",
-        wordWrap: { width: w - 32 },
+        wordWrap: { width: w - 48 },
         resolution: 2,
-        lineSpacing: 10,
+        lineSpacing: 12,
       })
       .setDepth(DEPTHS.DIALOG)
       .setVisible(false);
 
     // ── Indicador "continuar" ────────────────────────────────────────────────
     this._continueIndicator = scene.add
-      .text(x + w - 32, y + h - 28, "▼", {
+      .text(x + w - 40, y + h - 36, "▼", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: "14px",
+        fontSize: "20px",
         color: "#d4a017",
         resolution: 2,
       })

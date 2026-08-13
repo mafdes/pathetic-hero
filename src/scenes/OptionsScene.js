@@ -1,5 +1,5 @@
 /**
- * OptionsScene.js — Opciones (540×960 Vertical)
+ * OptionsScene.js — Opciones (720×1280 HD Vertical)
  */
 
 import * as Phaser from "phaser";
@@ -19,26 +19,26 @@ export class OptionsScene extends Phaser.Scene {
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
     // Título
-    this.add.text(W / 2, 100, "OPCIONES", {
+    this.add.text(W / 2, 140, "OPCIONES", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "32px",
+      fontSize: "44px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    this.add.rectangle(W / 2, 140, W - 60, 2, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
+    this.add.rectangle(W / 2, 190, W - 80, 3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
 
     // Panel
-    this.add.rectangle(W / 2, H / 2 - 20, 460, 320, COLORS.UI_PANEL, 0.9)
-      .setStrokeStyle(2, COLORS.GOLD_DARK).setDepth(DEPTHS.UI_BG);
+    this.add.rectangle(W / 2, H / 2, 600, 420, COLORS.UI_PANEL, 0.9)
+      .setStrokeStyle(3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI_BG);
 
-    this._addSliderRow("MUSICA",   W / 2, H / 2 - 80, 0.6);
-    this._addSliderRow("EFECTOS",  W / 2, H / 2 + 20, 0.8);
+    this._addSliderRow("MUSICA",   W / 2, H / 2 - 100, 0.6);
+    this._addSliderRow("EFECTOS",  W / 2, H / 2 + 30, 0.8);
 
-    new PixelButton(this, W / 2, H - 120,
+    new PixelButton(this, W / 2, H - 160,
       "< VOLVER",
       () => this._goBack(),
-      { width: 320, height: 54, fontSize: "16px" }
+      { width: 400, height: 76, fontSize: "22px" }
     );
 
     this.input.keyboard?.once("keydown-ESC", () => this._goBack());
@@ -46,27 +46,27 @@ export class OptionsScene extends Phaser.Scene {
   }
 
   _addSliderRow(label, x, y, initialValue) {
-    const barW = 200;
-    const barH = 20;
+    const barW = 280;
+    const barH = 26;
 
-    this.add.text(x, y - 24, label, {
+    this.add.text(x, y - 32, label, {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "14px",
+      fontSize: "20px",
       color: "#f0e6d3",
       resolution: 2,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
-    this.add.rectangle(x, y + 16, barW, barH, COLORS.BG_STONE).setDepth(DEPTHS.UI);
+    this.add.rectangle(x, y + 20, barW, barH, COLORS.BG_STONE).setDepth(DEPTHS.UI);
 
     this.add.rectangle(
-      x - barW / 2, y + 16,
+      x - barW / 2, y + 20,
       barW * initialValue, barH,
       COLORS.GOLD
     ).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
 
-    this.add.text(x + barW / 2 + 24, y + 16, `${Math.round(initialValue * 100)}%`, {
+    this.add.text(x + barW / 2 + 36, y + 20, `${Math.round(initialValue * 100)}%`, {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "13px",
+      fontSize: "18px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);

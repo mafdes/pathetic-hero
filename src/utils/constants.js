@@ -1,50 +1,42 @@
 /**
- * constants.js — Tokens de diseño globales para Pathetic Hero
- * Paleta retro inspirada en SNES/Mega Drive + estética medieval oscura
+ * constants.js — Tokens de diseño globales para Pathetic Hero (720×1280 HD Vertical)
  */
 
 // ─── Resolución Base ────────────────────────────────────────────────────────
-// 540×960 es el canvas interno en orientación VERTICAL (Portrait).
-export const BASE_WIDTH = 540;
-export const BASE_HEIGHT = 960;
+// 720×1280 es la resolución HD interna en orientación VERTICAL (Portrait 9:16).
+export const BASE_WIDTH = 720;
+export const BASE_HEIGHT = 1280;
 
 // ─── Paleta de Colores ───────────────────────────────────────────────────────
 export const COLORS = {
-  // Fondos
-  BG_DARK: 0x0d0613,        // Negro profundo (fondo exterior HTML)
-  BG_DEEP: 0x1a0a2e,        // Púrpura muy oscuro (fondo principal juego)
-  BG_STONE: 0x3d3d6b,       // Azul pizarra (muros, piedra)
-  BG_STONE_LIGHT: 0x5a5a8a, // Piedra iluminada
+  BG_DARK: 0x0d0613,
+  BG_DEEP: 0x1a0a2e,
+  BG_STONE: 0x3d3d6b,
+  BG_STONE_LIGHT: 0x5a5a8a,
 
-  // Dorados / UI principal
-  GOLD: 0xd4a017,           // Oro envejecido (destacados, marcos)
-  GOLD_LIGHT: 0xf0c040,     // Oro brillante (hover, selección)
-  GOLD_DARK: 0x8b6914,      // Oro oscuro (sombras de marcos)
+  GOLD: 0xd4a017,
+  GOLD_LIGHT: 0xf0c040,
+  GOLD_DARK: 0x8b6914,
 
-  // Pergamino / texto
-  PARCHMENT: 0xc8a97a,      // Beige cálido (fondos de pergamino)
-  TEXT_MAIN: 0xf0e6d3,      // Crema (texto principal)
-  TEXT_SHADOW: 0x2a1a0a,    // Sombra de texto
+  PARCHMENT: 0xc8a97a,
+  TEXT_MAIN: 0xf0e6d3,
+  TEXT_SHADOW: 0x2a1a0a,
 
-  // Semáforo
-  SUCCESS: 0x2d6a4f,        // Verde bosque (éxito, zona dorada OK)
-  SUCCESS_BRIGHT: 0x4caf77, // Verde brillante
-  DANGER: 0xc42b1c,         // Carmesí retro (peligro, error)
-  DANGER_BRIGHT: 0xff4444,  // Rojo brillante
+  SUCCESS: 0x2d6a4f,
+  SUCCESS_BRIGHT: 0x4caf77,
+  DANGER: 0xc42b1c,
+  DANGER_BRIGHT: 0xff4444,
 
-  // Magia / acento
-  MAGIC: 0x7b2d8b,          // Púrpura mágico
-  MAGIC_BRIGHT: 0xb347d4,   // Púrpura brillante
-  MAGIC_GLOW: 0xd484f5,     // Brillo mágico
+  MAGIC: 0x7b2d8b,
+  MAGIC_BRIGHT: 0xb347d4,
+  MAGIC_GLOW: 0xd484f5,
 
-  // UI neutros
-  UI_PANEL: 0x22143a,       // Fondo de paneles UI
-  UI_BORDER: 0x6a4e8a,      // Borde de paneles
+  UI_PANEL: 0x22143a,
+  UI_BORDER: 0x6a4e8a,
   WHITE: 0xffffff,
   BLACK: 0x000000,
 };
 
-// ─── Colores CSS (para estilo HTML externo) ─────────────────────────────────
 export const CSS_COLORS = {
   BG_DARK: "#0d0613",
   BG_DEEP: "#1a0a2e",
@@ -59,16 +51,15 @@ export const FONTS = {
   FALLBACK: "monospace",
 };
 
-// Tamaños de fuente en píxeles del canvas (960×540)
+// Tamaños de fuente legibles a 720×1280
 export const FONT_SIZES = {
-  TITLE:    "32px",   // Títulos principales
-  HEADING:  "22px",   // Subtítulos de sección
-  BODY:     "16px",   // Texto de juego normal
-  SMALL:    "12px",   // Hints, versión, secundarios
-  TINY:     "10px",   // Etiquetas muy pequeñas
+  TITLE:    "52px",   // Títulos principales
+  HEADING:  "32px",   // Subtítulos de sección
+  BODY:     "22px",   // Texto de juego normal / botones
+  SMALL:    "16px",   // Hints, versión, secundarios
+  TINY:     "12px",   // Etiquetas muy pequeñas
 };
 
-// ─── Profundidades (Z-index Phaser) ─────────────────────────────────────────
 export const DEPTHS = {
   BG: 0,
   TILEMAP: 10,
@@ -82,16 +73,14 @@ export const DEPTHS = {
   CURSOR: 90,
 };
 
-// ─── Tiempos y Animación ─────────────────────────────────────────────────────
 export const TIMING = {
-  TYPEWRITER_DELAY: 40,     // ms por carácter en typewriter
-  TYPEWRITER_FAST: 20,      // ms al acelerar (hold skip)
-  COOLDOWN_AFTER_RESULT: 600, // ms antes de aceptar input tras resultado
-  TRANSITION_DURATION: 400, // ms para fundidos entre escenas
-  CURSOR_BLINK: 500,        // ms para parpadeo de cursor
+  TYPEWRITER_DELAY: 40,
+  TYPEWRITER_FAST: 20,
+  COOLDOWN_AFTER_RESULT: 600,
+  TRANSITION_DURATION: 400,
+  CURSOR_BLINK: 500,
 };
 
-// ─── Pruebas del Gremio ──────────────────────────────────────────────────────
 export const CHALLENGES = {
   DEXTERITY: "dexterity",
   CONSTITUTION: "constitution",
@@ -108,7 +97,6 @@ export const CHALLENGE_LABELS = {
   [CHALLENGES.INTELLIGENCE]: "INTELIGENCIA",
 };
 
-// ─── Escenas (nombres de registro en Phaser) ─────────────────────────────────
 export const SCENES = {
   BOOT: "BootScene",
   PRELOAD: "PreloadScene",
@@ -126,7 +114,6 @@ export const SCENES = {
   ADVENTURE: "AdventureScene",
 };
 
-// ─── Generador de Nombres ────────────────────────────────────────────────────
 export const HERO_NAME_PREFIXES = [
   "Sir", "Lord", "Brother", "Frater", "Magister",
   "El Gran", "El Temible", "El Mediocre",

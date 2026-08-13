@@ -1,9 +1,6 @@
 /**
  * main.js — Bootstrap de Phaser 4
  * Punto de entrada del juego. Configura el motor y registra todas las escenas.
- *
- * PHASER 4 NOTE: Se usa `import * as Phaser from 'phaser'` (wildcard)
- * ya que el default export cambió en Phaser 4.
  */
 
 import * as Phaser from "phaser";
@@ -19,23 +16,20 @@ import { DexterityScene } from "./scenes/challenges/DexterityScene.js";
 
 /** @type {Phaser.Types.Core.GameConfig} */
 const config = {
-  type: Phaser.AUTO,           // WebGL si disponible, Canvas como fallback
-  width: BASE_WIDTH,           // 320px — resolución pixel art nativa
-  height: BASE_HEIGHT,         // 180px
+  type: Phaser.AUTO,
+  width: BASE_WIDTH,
+  height: BASE_HEIGHT,
   backgroundColor: "#0d0613",
   parent: "game-container",
-  // pixelArt: true se añadirá cuando tengamos sprites reales.
-  // Con texto CSS no usar nearest-neighbor global o queda horrible.
   scale: {
-    mode: Phaser.Scale.FIT,    // Escala manteniendo relación de aspecto
+    mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    expandParent: true,
   },
   physics: {
     default: "arcade",
     arcade: {
       gravity: { y: 0 },
-      debug: import.meta.env?.DEV ?? false, // Hitboxes solo en desarrollo
+      debug: import.meta.env?.DEV ?? false,
     },
   },
   scene: [
@@ -50,10 +44,8 @@ const config = {
   ],
 };
 
-// Instancia global del juego (accesible en DevTools para depuración)
 const game = new Phaser.Game(config);
 
-// En desarrollo, exponer el juego en window para facilitar debugging
 if (import.meta.env?.DEV) {
   window.__PATHETIC_HERO__ = game;
 }
