@@ -41,12 +41,12 @@ export class IntroScene extends Phaser.Scene {
     // Texto narrativo vertical centrado en pantalla
     this._textObject = this.add.text(W / 2, H / 2 - 50, "", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "32px",
+      fontSize: "26px",
       color: "#f0e6d3",
       resolution: 2,
       align: "center",
-      wordWrap: { width: 660 },
-      lineSpacing: 24,
+      wordWrap: { width: 640 },
+      lineSpacing: 16,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
     // Hint "SKIP"
