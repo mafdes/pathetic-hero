@@ -1,6 +1,6 @@
 /**
  * AgilityScene.js — Prueba de Agilidad del Gremio (720×1280 HD Vertical)
- * Sala retro pixel art: "El Pasadizo de las Trampas Oxidada".
+ * QTE reflex dodge con avance de diálogo modal garantizado.
  */
 
 import * as Phaser from "phaser";
@@ -83,7 +83,7 @@ export class AgilityScene extends Phaser.Scene {
     this._timerBar = this.add.rectangle(W / 2, H / 2 + 110, 520, 24, 0x4caf77, 1)
       .setDepth(DEPTHS.UI + 1);
 
-    // Telón y Cuenta Atrás
+    // Telón y Cuenta Atrás desde frame 1
     this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x191409, 0.98)
       .setDepth(250).setVisible(true);
 
@@ -93,11 +93,11 @@ export class AgilityScene extends Phaser.Scene {
 
     this._dialog = new DialogBox(this);
 
-    // Escuchar Teclado y Click
+    // Escuchar Teclado y Click con avance garantizado de diálogo
     this.input.keyboard?.on("keydown", (evt) => this._onKeyPress(evt.code));
     this.input.on("pointerdown", () => this._onPointerTap());
 
-    this.time.delayedCall(400, () => this._beginLevel());
+    this.time.delayedCall(300, () => this._beginLevel());
   }
 
   _beginLevel() {
@@ -138,7 +138,11 @@ export class AgilityScene extends Phaser.Scene {
   }
 
   _onKeyPress(code) {
-    if (!this._alive || this._inCountdown || !this._currentPrompt || this._dialog.isVisible()) return;
+    if (this._dialog.isVisible()) {
+      this._dialog.advance();
+      return;
+    }
+    if (!this._alive || this._inCountdown || !this._currentPrompt) return;
 
     const expectedKey = `Key${this._currentPrompt.key}`;
     const expectedArrow = `Arrow${this._currentPrompt.key}`;
@@ -152,12 +156,16 @@ export class AgilityScene extends Phaser.Scene {
   }
 
   _onPointerTap() {
-    if (!this._alive || this._inCountdown || !this._currentPrompt || this._dialog.isVisible()) return;
+    if (this._dialog.isVisible()) {
+      this._dialog.advance();
+      return;
+    }
+    if (!this._alive || this._inCountdown || !this._currentPrompt) return;
     this._passLevel();
   }
 
   update(time, delta) {
-    if (!this._alive || this._inCountdown || !this._currentPrompt || this._dialog.isVisible()) return;
+    if (!this._alive || this._inCountdown || this._dialog.isVisible()) return;
 
     const dt = delta / 1000;
     this._timeLeft -= dt;
@@ -171,6 +179,8 @@ export class AgilityScene extends Phaser.Scene {
   }
 
   _passLevel() {
+    if (this._inCountdown || !this._alive) return;
+    this._inCountdown = true;
     this._score = this._currentLevel;
     if (this._currentLevel >= this._maxLevels) {
       this._endGame(true);
@@ -178,7 +188,7 @@ export class AgilityScene extends Phaser.Scene {
     }
     this._currentLevel++;
     this.cameras.main.flash(150, 240, 192, 64, true);
-    this._beginLevel();
+    this.time.delayedCall(250, () => this._beginLevel());
   }
 
   _failLevel() {

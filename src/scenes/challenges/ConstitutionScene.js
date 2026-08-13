@@ -1,6 +1,6 @@
 /**
  * ConstitutionScene.js — Prueba de Constitución del Gremio (720×1280 HD Vertical)
- * Barra horizontal separada con espacio holgado y tolerancia de control justa.
+ * Avance modal dialog corregido en diálogos y barra horizontal holgada.
  */
 
 import * as Phaser from "phaser";
@@ -82,7 +82,7 @@ export class ConstitutionScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#8abf9e", resolution: 2, align: "center", lineSpacing: 8,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // Medidor Vertical Principal Centrado (subido para dejar espacio abajo)
+    // Medidor Vertical Principal Centrado
     const mX = W / 2;
     const mY = H / 2 - 60;
     const mW = 86;
@@ -115,9 +115,9 @@ export class ConstitutionScene extends Phaser.Scene {
     this._needle = this.add.rectangle(mX, mY, mW - 4, 18, 0x4caf77, 1)
       .setDepth(DEPTHS.UI + 1);
 
-    // ── BARRA DE TIEMPO HORIZONTAL BIEN SEPARADA ABAJO ────────────────────────
+    // Barra de Tiempo Horizontal Separada
     const pX = W / 2;
-    const pY = mY + mH / 2 + 75; // 75px de separación respecto al medidor
+    const pY = mY + mH / 2 + 75;
     const pW = 480;
     const pH = 24;
 
@@ -133,7 +133,7 @@ export class ConstitutionScene extends Phaser.Scene {
     this._progressFill = this.add.rectangle(pX - pW / 2, pY, 0, pH - 4, 0x4caf77, 1)
       .setOrigin(0, 0.5).setDepth(DEPTHS.UI);
 
-    // Hint Control bien separado
+    // Hint Control
     const inputMode = this.registry.get("inputMode") ?? "keyboard";
     let hintText = "[ ESPACIO ]";
     if (inputMode === "mouse") hintText = "[ CLICK IZQUIERDO ]";
@@ -143,7 +143,7 @@ export class ConstitutionScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#5a5a8a", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // Telón Oscuro desde el primer frame de carga
+    // Telón Oscuro
     this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x0a1a0f, 0.98)
       .setDepth(250)
       .setVisible(true);
@@ -156,10 +156,20 @@ export class ConstitutionScene extends Phaser.Scene {
     // Diálogo Modal
     this._dialog = new DialogBox(this);
 
-    this.input.keyboard?.on("keydown-SPACE", () => this._onTap());
-    this.input.on("pointerdown", () => this._onTap());
+    // Escuchadores de Entrada con avance de diálogo garantizado
+    this.input.keyboard?.on("keydown-SPACE", () => this._handleInput());
+    this.input.on("pointerdown",             () => this._handleInput());
 
     this.time.delayedCall(300, () => this._beginLevel());
+  }
+
+  _handleInput() {
+    if (this._dialog.isVisible()) {
+      this._dialog.advance();
+      return;
+    }
+    if (!this._alive || this._inCountdown) return;
+    this._gaugeVal = Math.min(100, this._gaugeVal + 12);
   }
 
   _beginLevel() {
@@ -233,22 +243,17 @@ export class ConstitutionScene extends Phaser.Scene {
     this._gaugeVal = Phaser.Math.Clamp(this._gaugeVal + Phaser.Math.Between(-10, 10), 20, 80);
   }
 
-  _onTap() {
-    if (!this._alive || this._inCountdown || this._dialog.isVisible()) return;
-    this._gaugeVal = Math.min(100, this._gaugeVal + 12);
-  }
-
   update(time, delta) {
     if (!this._alive || this._inCountdown || this._dialog.isVisible()) return;
 
     const dt = delta / 1000;
     const level = this._currentLevel;
 
-    // Empuje constante hacia abajo suave y controlado
+    // Empuje constante hacia abajo
     const decaySpeed = 15 + level * 1.5;
     this._gaugeVal = Math.max(0, this._gaugeVal - decaySpeed * dt);
 
-    // Solo se pierde si caes al fondo absoluto (<= 0)
+    // Colapso por caer al fondo
     if (this._gaugeVal <= 0) {
       this._failLevel();
       return;
@@ -261,14 +266,14 @@ export class ConstitutionScene extends Phaser.Scene {
 
     this._needle.setY(nY);
 
-    // Oscilación suave de la zona segura a partir de Nivel 7
+    // Oscilación de la zona segura a partir de Nivel 7
     if (level >= 7) {
       this._zoneT += dt;
       const offset = Math.sin(this._zoneT * (1.0 + level * 0.1)) * (20 + level * 3);
       this._targetZone.setY(this._mY + offset);
     }
 
-    // Comprobar si está en zona verde
+    // Comprobar zona verde
     const tzTop = this._targetZone.y - this._targetZone.height / 2;
     const tzBot = this._targetZone.y + this._targetZone.height / 2;
 
@@ -279,11 +284,9 @@ export class ConstitutionScene extends Phaser.Scene {
         return;
       }
     } else {
-      // Decremento muy suave si te sales de la zona verde para no penalizar injustamente
       this._holdTime = Math.max(0, this._holdTime - dt * 0.4);
     }
 
-    // Actualizar barra de progreso HORIZONTAL de estabilidad
     const ratio = Math.min(1.0, Math.max(0, this._holdTime / this._requiredHold));
     const fillW = ratio * 476;
     this._progressFill.setSize(fillW, 20);
@@ -309,15 +312,23 @@ export class ConstitutionScene extends Phaser.Scene {
     this._coverPanel.setVisible(true);
     const comment = Phaser.Math.RND.pick(FAIL_COMMENTS);
     this._dialog.show(`FIN DE LA PRUEBA\n\n${comment}\n\nPuntuación: ${this._score} / 20\n\n${getVerdict(this._score)}`, () => {
-      this.scene.start(SCENES.GUILD_REPORT, { challenge: this._challenge, score: this._score, sheet: this._sheetData });
+      this._returnToReport(this._score);
     }, "Examinador Rotval");
   }
 
   _endGame(perfect = false) {
     this._alive = false;
     this._coverPanel.setVisible(true);
-    this._dialog.show(`¡RESISTENCIA SUPERADA!\n\nPuntuación: ${this._score} / 20\n\n${getVerdict(this._score)}`, () => {
-      this.scene.start(SCENES.GUILD_REPORT, { challenge: this._challenge, score: this._score, sheet: this._sheetData });
+    const finalScore = this._score;
+    this._dialog.show(`¡RESISTENCIA SUPERADA!\n\nPuntuación: ${finalScore} / 20\n\n${getVerdict(finalScore)}`, () => {
+      this._returnToReport(finalScore);
     }, "Examinador Rotval");
+  }
+
+  _returnToReport(score) {
+    this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
+    this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
+      this.scene.start(SCENES.GUILD_REPORT, { challenge: this._challenge, score, sheet: this._sheetData });
+    });
   }
 }

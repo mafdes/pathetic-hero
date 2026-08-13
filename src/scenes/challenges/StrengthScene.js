@@ -1,6 +1,6 @@
 /**
  * StrengthScene.js — Prueba de Fuerza del Gremio (720×1280 HD Vertical)
- * Sala retro pixel art: "La Forja del Levantamiento".
+ * Machaque de tecla/click para levantar la roca con avance modal garantizado.
  */
 
 import * as Phaser from "phaser";
@@ -88,7 +88,7 @@ export class StrengthScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#ff8888", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // Telón y Cuenta Atrás
+    // Telón y Cuenta Atrás desde frame 1
     this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x1a0d0a, 0.98)
       .setDepth(250).setVisible(true);
 
@@ -98,10 +98,22 @@ export class StrengthScene extends Phaser.Scene {
 
     this._dialog = new DialogBox(this);
 
-    this.input.keyboard?.on("keydown-SPACE", () => this._onMash());
-    this.input.on("pointerdown", () => this._onMash());
+    this.input.keyboard?.on("keydown-SPACE", () => this._handleInput());
+    this.input.on("pointerdown",             () => this._handleInput());
 
-    this.time.delayedCall(400, () => this._beginLevel());
+    this.time.delayedCall(300, () => this._beginLevel());
+  }
+
+  _handleInput() {
+    if (this._dialog.isVisible()) {
+      this._dialog.advance();
+      return;
+    }
+    if (!this._alive || this._inCountdown) return;
+    this._power = Math.min(100, this._power + (9 - this._currentLevel * 0.3));
+    if (this._power >= 100) {
+      this._passLevel();
+    }
   }
 
   _beginLevel() {
@@ -135,19 +147,11 @@ export class StrengthScene extends Phaser.Scene {
     next();
   }
 
-  _onMash() {
-    if (!this._alive || this._inCountdown || this._dialog.isVisible()) return;
-    this._power = Math.min(100, this._power + (9 - this._currentLevel * 0.3));
-    if (this._power >= 100) {
-      this._passLevel();
-    }
-  }
-
   update(time, delta) {
     if (!this._alive || this._inCountdown || this._dialog.isVisible()) return;
 
     const dt = delta / 1000;
-    this._power = Math.max(0, this._power - (28 + this._currentLevel * 4) * dt);
+    this._power = Math.max(0, this._power - (24 + this._currentLevel * 3) * dt);
     this._levelTime -= dt;
 
     const mH = 440;
@@ -160,6 +164,8 @@ export class StrengthScene extends Phaser.Scene {
   }
 
   _passLevel() {
+    if (this._inCountdown || !this._alive) return;
+    this._inCountdown = true;
     this._score = this._currentLevel;
     if (this._currentLevel >= this._maxLevels) {
       this._endGame(true);
@@ -167,7 +173,7 @@ export class StrengthScene extends Phaser.Scene {
     }
     this._currentLevel++;
     this.cameras.main.flash(150, 255, 68, 68, true);
-    this._beginLevel();
+    this.time.delayedCall(250, () => this._beginLevel());
   }
 
   _failLevel() {
