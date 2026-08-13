@@ -1,6 +1,7 @@
 /**
  * ClassSelectionScene.js — Selección de Clase por Escalones (Tiers I - IV)
  * Clases narrativas satíricas sin bonificadores.
+ * Maquetación de tarjetas sin solapamientos y avance modal garantizado al hacer click/pulsar espacio.
  */
 
 import * as Phaser from "phaser";
@@ -29,6 +30,26 @@ export class ClassSelectionScene extends Phaser.Scene {
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
     this._dialog = new DialogBox(this);
+
+    // Escuchadores globales de avance para el cuadro modal del tribunal
+    this.input.on("pointerdown", () => {
+      if (this._dialog.isVisible()) {
+        this._dialog.advance();
+      }
+    });
+
+    this.input.keyboard?.on("keydown-SPACE", () => {
+      if (this._dialog.isVisible()) {
+        this._dialog.advance();
+      }
+    });
+
+    this.input.keyboard?.on("keydown-ENTER", () => {
+      if (this._dialog.isVisible()) {
+        this._dialog.advance();
+      }
+    });
+
     this._renderTierUI();
   }
 
@@ -44,59 +65,69 @@ export class ClassSelectionScene extends Phaser.Scene {
     this._container = this.add.container(0, 0).setDepth(DEPTHS.UI);
 
     // ── Cabecera ──────────────────────────────────────────────────────────────
-    const headerTitle = this.add.text(cx, 50, tierData.title, {
+    const headerTitle = this.add.text(cx, 45, tierData.title, {
       fontFamily: FONTS.PRIMARY, fontSize: "24px", color: "#d4a017", resolution: 2,
     }).setOrigin(0.5);
     this._container.add(headerTitle);
 
-    const headerSub = this.add.text(cx, 95, tierData.subtitle, {
+    const headerSub = this.add.text(cx, 90, tierData.subtitle, {
       fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#8a7a9a", wordWrap: { width: W - 80 }, align: "center", resolution: 2, lineSpacing: 6,
     }).setOrigin(0.5);
     this._container.add(headerSub);
 
-    const sep1 = this.add.rectangle(cx, 135, W - 60, 3, COLORS.GOLD_DARK);
+    const sep1 = this.add.rectangle(cx, 130, W - 60, 3, COLORS.GOLD_DARK);
     this._container.add(sep1);
 
     // ── Lista de Clases del Tier ─────────────────────────────────────────────
-    const startY = 160;
-    const itemH  = 160;
-    const gapY   = 175;
+    const startY = 150;
+    const itemH  = 165;
+    const gapY   = 180;
 
     tierData.classes.forEach((cls, idx) => {
       const y = startY + idx * gapY;
-      if (y + itemH > H - 150) return; // Evitar salir de pantalla en vertical
+      if (y + itemH > H - 110) return; // Evitar salir de pantalla en vertical
 
+      // Tarjeta Panel
       const bg = this.add.rectangle(cx, y + itemH / 2, W - 70, itemH, COLORS.UI_PANEL, 0.95)
         .setStrokeStyle(3, COLORS.UI_BORDER)
         .setInteractive({ useHandCursor: true });
       this._container.add(bg);
 
-      const title = this.add.text(cx - 270, y + 26, cls.name, {
+      // Línea 1: Nombre de la clase (Izquierda, dorado brillante)
+      const title = this.add.text(cx - 260, y + 26, cls.name, {
         fontFamily: FONTS.PRIMARY, fontSize: "20px", color: "#f0c040", resolution: 2,
       }).setOrigin(0, 0.5);
       this._container.add(title);
 
-      const req = this.add.text(cx + 270, y + 26, cls.reqText, {
-        fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#6a4e8a", resolution: 2,
-      }).setOrigin(1, 0.5);
+      // Línea 2: Requisitos exigidos (Debajo del nombre para evitar solapamientos)
+      const req = this.add.text(cx - 260, y + 54, `[ ${cls.reqText} ]`, {
+        fontFamily: FONTS.PRIMARY, fontSize: "13px", color: "#9d7bb0", resolution: 2,
+      }).setOrigin(0, 0.5);
       this._container.add(req);
 
-      const desc = this.add.text(cx - 270, y + 80, cls.description, {
+      // Línea 3: Descripción humorística narrativa
+      const desc = this.add.text(cx - 260, y + 110, cls.description, {
         fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#f0e6d3", wordWrap: { width: W - 140 }, lineSpacing: 6, resolution: 2,
       }).setOrigin(0, 0.5);
       this._container.add(desc);
 
       bg.on("pointerover", () => bg.setStrokeStyle(3, COLORS.GOLD));
       bg.on("pointerout",  () => bg.setStrokeStyle(3, COLORS.UI_BORDER));
-      bg.on("pointerdown", () => this._trySelectClass(cls, tierData));
+      bg.on("pointerdown", () => {
+        if (!this._dialog.isVisible()) {
+          this._trySelectClass(cls, tierData);
+        }
+      });
     });
 
     // ── Botón "Rendirse y mirar Clases Inferiores" ────────────────────────────
     if (tierData.giveUpText) {
-      const giveUpBtn = new PixelButton(this, cx, H - 75, tierData.giveUpText, () => {
-        this._currentTierIndex = Math.min(CLASS_TIERS.length - 1, this._currentTierIndex + 1);
-        this._renderTierUI();
-      }, { width: 620, height: 76, fontSize: "16px" });
+      const giveUpBtn = new PixelButton(this, cx, H - 65, tierData.giveUpText, () => {
+        if (!this._dialog.isVisible()) {
+          this._currentTierIndex = Math.min(CLASS_TIERS.length - 1, this._currentTierIndex + 1);
+          this._renderTierUI();
+        }
+      }, { width: 620, height: 72, fontSize: "15px" });
 
       this._container.add(giveUpBtn._bg);
       this._container.add(giveUpBtn._label);
@@ -130,7 +161,7 @@ export class ClassSelectionScene extends Phaser.Scene {
       }, "Tribunal del Gremio");
     } else {
       // Rechazo sarcástico
-      this._dialog.show(`SOLICITUD RECHAZADA\n\n${cls.rejection}\n\n[ ${cls.reqText} ]`, null, "Tribunal del Gremio");
+      this._dialog.show(`SOLICITUD RECHAZADA\n\n${cls.rejection}\n\nRequisito: ${cls.reqText}`, null, "Tribunal del Gremio");
     }
   }
 }
