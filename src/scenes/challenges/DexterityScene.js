@@ -1,6 +1,7 @@
 /**
  * DexterityScene.js — Prueba de Destreza del Gremio (720×1280 HD Vertical)
- * Incluye panel de cobertura para ocultar redibujos, señuelo móvil desorientador y sabotajes satíricos.
+ * Sala retro pixel art: "Galería de Calibración de Arqueros".
+ * Diálogos y cuenta atrás en capas superiores limpias.
  */
 
 import * as Phaser from "phaser";
@@ -30,7 +31,7 @@ const SUCCESS_COMMENTS = [
 ];
 
 const SABOTAGE_ANNOUNCEMENTS = {
-  3:  "Nivel 3. Hemos añadido un indicador fantasma.\nEs un fallo del prototipo. Ignore el magenta.",
+  3:  "Nivel 3. Indicador fantasma activado.\nEs un fallo del prototipo. Ignore el magenta.",
   5:  "Nivel 5. Parpadeo de calibración del equipo.\nCompletamente normal. No nos mire así.",
   7:  "Nivel 7. Zonas de control señuelo adicionales.\nPor motivos de seguridad burocrática.",
   9:  "Nivel 9. Puede que la velocidad varíe.\nLa maquinaria es antigua. Presupuesto recortado.",
@@ -78,49 +79,57 @@ export class DexterityScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.BG_DEEP);
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
+    // ── Estilo de Sala Retro Pixel Art: "Galería de Calibración" ─────────────
+    this._drawRoomEnvironment(W, H);
+
     // ── HUD superior ──────────────────────────────────────────────────────────
-    this.add.rectangle(W / 2, 50, W, 100, COLORS.UI_PANEL, 0.9)
+    this.add.rectangle(W / 2, 55, W - 60, 80, COLORS.UI_PANEL, 0.95)
+      .setStrokeStyle(3, COLORS.GOLD_DARK)
       .setDepth(DEPTHS.UI_BG);
 
-    this.add.text(W / 2, 34, "PRUEBA: DESTREZA", {
+    this.add.text(W / 2, 38, "SALA 01: DESTREZA", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "26px",
+      fontSize: "24px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
-    this._levelText = this.add.text(W / 2, 72, "NIVEL 1 / 20", {
+    this._levelText = this.add.text(W / 2, 74, "NIVEL 1 / 20", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "18px",
+      fontSize: "16px",
       color: "#f0e6d3",
       resolution: 2,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
-    // Instrucción
-    this.add.text(W / 2, 160, "PULSA cuando el cursor real (BLANCO)\ncruece la zona dorada", {
+    // ── Instrucción Principal ───────────────────────────────────────────────
+    this.add.text(W / 2, 175, "PULSA cuando el cursor BLANCO\ncruece la zona dorada", {
       fontFamily: FONTS.PRIMARY,
       fontSize: "16px",
-      color: "#6a4e8a",
+      color: "#c8a97a",
       resolution: 2,
       align: "center",
       lineSpacing: 8,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // ── Barra de precisión HD (640px de ancho) ───────────────────────────────
+    // ── Barra de precisión (640px de ancho) ──────────────────────────────────
     const barY = H / 2 - 80;
     const barW = W - 80;
     const barH = 60;
     const barX = 40;
 
-    // Marco
-    this.add.rectangle(W / 2, barY, barW, barH, COLORS.BG_STONE, 1)
-      .setStrokeStyle(3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI_BG);
+    // Marco de la máquina de prueba
+    this.add.rectangle(W / 2, barY, barW + 16, barH + 16, COLORS.BG_DARK, 1)
+      .setStrokeStyle(4, COLORS.GOLD_DARK)
+      .setDepth(DEPTHS.UI_BG);
 
-    // Zona dorada
+    this.add.rectangle(W / 2, barY, barW, barH, COLORS.BG_STONE, 1)
+      .setDepth(DEPTHS.UI_BG + 1);
+
+    // Zona dorada objetivo
     this._goldZone = this.add.rectangle(W / 2, barY, 110, barH - 8, COLORS.GOLD, 0.6)
       .setDepth(DEPTHS.UI);
 
-    // Señuelos rojos
+    // Señuelos rojos (Nivel 7+)
     this._decoyLeft  = this.add.rectangle(0, barY, 0, barH - 8, COLORS.DANGER, 0.5)
       .setDepth(DEPTHS.UI).setVisible(false);
     this._decoyRight = this.add.rectangle(0, barY, 0, barH - 8, COLORS.DANGER, 0.5)
@@ -140,15 +149,15 @@ export class DexterityScene extends Phaser.Scene {
     this._barH    = barH;
     this._barMidX = barX + barW / 2;
 
-    // Extremos
-    this.add.text(barX - 16, barY, "◄", {
-      fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#3d3d6b", resolution: 2,
+    // Extremos de la guía
+    this.add.text(barX - 18, barY, "◄", {
+      fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#6a4e8a", resolution: 2,
     }).setOrigin(1, 0.5).setDepth(DEPTHS.UI);
-    this.add.text(barX + barW + 16, barY, "►", {
-      fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#3d3d6b", resolution: 2,
+    this.add.text(barX + barW + 18, barY, "►", {
+      fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#6a4e8a", resolution: 2,
     }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
 
-    // Hint de control según modo de entrada seleccionado
+    // Hint de control adaptativo según inputMode seleccionado
     const inputMode = this.registry.get("inputMode") ?? "keyboard";
     let hintText = "[ ESPACIO ]";
     if (inputMode === "mouse") {
@@ -164,10 +173,10 @@ export class DexterityScene extends Phaser.Scene {
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // ── Panel de Cobertura para Ocultar Redibujos durante Cuenta Atrás ──────
-    this._coverPanel = this.add.rectangle(W / 2, barY, barW + 30, barH + 60, COLORS.UI_PANEL, 0.98)
+    // ── Panel de Cobertura Opaco para Ocultar Redibujos durante Cuenta Atrás ──────
+    this._coverPanel = this.add.rectangle(W / 2, barY, barW + 30, barH + 60, COLORS.UI_PANEL, 1)
       .setStrokeStyle(3, COLORS.GOLD_DARK)
-      .setDepth(DEPTHS.UI + 5)
+      .setDepth(150)
       .setVisible(false);
 
     // Texto de Cuenta Atrás (3... 2... 1... ¡YA!) sobre el panel de cobertura
@@ -176,9 +185,9 @@ export class DexterityScene extends Phaser.Scene {
       fontSize: "48px",
       color: "#d4a017",
       resolution: 2,
-    }).setOrigin(0.5).setDepth(DEPTHS.UI + 6).setVisible(false);
+    }).setOrigin(0.5).setDepth(151).setVisible(false);
 
-    // ── Diálogo del Examinador ───────────────────────────────────────────────
+    // ── Diálogo del Examinador (en capa 200, la más alta) ─────────────────────
     this._dialog = new DialogBox(this, {
       y: H - 290,
       height: 260,
@@ -187,11 +196,43 @@ export class DexterityScene extends Phaser.Scene {
 
     // ── Input ─────────────────────────────────────────────────────────────────
     this.input.keyboard?.on("keydown-SPACE", () => this._handleInput());
-    this.input.keyboard?.on("keydown-ENTER", () => this._handleInput());
     this.input.on("pointerdown",             () => this._handleInput());
 
     // ── Arrancar primer nivel ─────────────────────────────────────────────────
     this.time.delayedCall(400, () => this._beginLevel());
+  }
+
+  // ─── Renderizado de Sala Retro Pixel Art ─────────────────────────────────
+
+  _drawRoomEnvironment(W, H) {
+    const gfx = this.add.graphics().setDepth(DEPTHS.BG);
+
+    // Fondo oscuro con patrón de piedra
+    gfx.fillStyle(0x120a1f, 1);
+    gfx.fillRect(0, 0, W, H);
+
+    // Marcos de piedra retro a los lados (columnas de la sala)
+    gfx.fillStyle(0x28183d, 1);
+    gfx.fillRect(0, 0, 30, H);
+    gfx.fillRect(W - 30, 0, 30, H);
+
+    gfx.fillStyle(0x4a2e6e, 1);
+    gfx.fillRect(26, 0, 4, H);
+    gfx.fillRect(W - 30, 0, 4, H);
+
+    // Antorchas decorativas (puntos dorados parpadeantes)
+    const torchLeft = this.add.circle(60, 240, 6, 0xd4a017).setDepth(DEPTHS.BG + 1);
+    const torchRight = this.add.circle(W - 60, 240, 6, 0xd4a017).setDepth(DEPTHS.BG + 1);
+
+    this.tweens.add({
+      targets: [torchLeft, torchRight],
+      scale: 1.4,
+      alpha: 0.6,
+      duration: 300,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
   }
 
   // ─── Dificultad y Sabotajes ───────────────────────────────────────────────

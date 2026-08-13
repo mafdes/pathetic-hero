@@ -22,11 +22,13 @@ export class DialogBox {
     this._isTyping = false;
     this._visible = false;
 
+    const DIALOG_DEPTH = 200;
+
     // ── Fondo del panel ─────────────────────────────────────────────────────
     this._bg = scene.add
-      .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.95)
+      .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.98)
       .setOrigin(0, 0)
-      .setDepth(DEPTHS.DIALOG)
+      .setDepth(DIALOG_DEPTH)
       .setStrokeStyle(3, COLORS.GOLD)
       .setVisible(false);
 
@@ -38,7 +40,7 @@ export class DialogBox {
         color: "#d4a017",
         resolution: 2,
       })
-      .setDepth(DEPTHS.DIALOG)
+      .setDepth(DIALOG_DEPTH)
       .setVisible(false);
 
     // ── Texto principal con typewriter ───────────────────────────────────────
@@ -51,7 +53,7 @@ export class DialogBox {
         resolution: 2,
         lineSpacing: 12,
       })
-      .setDepth(DEPTHS.DIALOG)
+      .setDepth(DIALOG_DEPTH)
       .setVisible(false);
 
     // ── Indicador "continuar" ────────────────────────────────────────────────
@@ -62,7 +64,7 @@ export class DialogBox {
         color: "#d4a017",
         resolution: 2,
       })
-      .setDepth(DEPTHS.DIALOG)
+      .setDepth(DIALOG_DEPTH)
       .setVisible(false);
 
     scene.tweens.add({
