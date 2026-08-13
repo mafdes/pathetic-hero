@@ -187,10 +187,10 @@ export class DexterityScene extends Phaser.Scene {
       resolution: 2,
     }).setOrigin(0.5).setDepth(151).setVisible(false);
 
-    // ── Diálogo del Examinador (en capa 200, la más alta) ─────────────────────
+    // ── Diálogo del Examinador (Posicionado ARRIBA en pantalla) ────────────────
     this._dialog = new DialogBox(this, {
-      y: H - 290,
-      height: 260,
+      y: 110,
+      height: 240,
       speaker: "Examinador Rotval",
     });
 
