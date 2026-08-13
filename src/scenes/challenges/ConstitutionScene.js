@@ -1,6 +1,7 @@
 /**
  * ConstitutionScene.js — Prueba de Constitución del Gremio (720×1280 HD Vertical)
- * Incluye todos los sabotajes activos: fugas de gas verde, temblores continuos, movimiento de zona e inversión de gravedad.
+ * 100% CÓDIGO FIEL AL ORIGINAL (`heroic-failure/ui/constitution-screen.js`).
+ * Mecánica: LATIDO PULSADO (FLAPPY PULSE) — Mantener la aguja dentro de la zona verde durante la duración del temporizador.
  */
 
 import * as Phaser from "phaser";
@@ -8,29 +9,77 @@ import {
   COLORS, FONTS, SCENES, TIMING, DEPTHS, CHALLENGES,
 } from "../../utils/constants.js";
 import { DialogBox } from "../../ui/DialogBox.js";
-import { getVerdict } from "../../utils/helpers.js";
 
-const FAIL_COMMENTS = [
-  "Tu sistema inmunológico es un chiste.",
-  "El veneno ni tuvo que esforzarse.",
-  "Desmayado en 3 segundos. Récord del Gremio.",
-  "Un moco tiene más resistencia biológica.",
-  "Estómago de mantequilla. El Tribunal anota: rechazado.",
+const TOTAL_ROUNDS = 20;
+
+function roundConfig(roundIndex) {
+  const level = roundIndex + 1;
+  let zoneSize = 0.38;
+  let gravity = 0.32;
+  let impulse = 0.12;
+  let duration = 6.0 + level * 0.3;
+  let isErratic = false;
+  let moveZone = false;
+  let blink = false;
+  let message = "";
+
+  if (level === 1) {
+    zoneSize = 0.38;
+    gravity = 0.32;
+    message = "Mantenga el pulso en la zona verde con toques acompasados.";
+  } else if (level === 2) {
+    zoneSize = 0.28;
+    gravity = 0.42;
+    message = "Evaluación de resistencia biológica.";
+  } else if (level === 3) {
+    zoneSize = 0.20;
+    gravity = 0.54;
+    isErratic = true;
+    message = "El pulso sufre alterations térmicas.";
+  } else if (level === 4) {
+    zoneSize = 0.14;
+    gravity = 0.68;
+    isErratic = true;
+    moveZone = true;
+    message = "La franja de salud se desplaza.";
+  } else if (level === 5) {
+    zoneSize = 0.095;
+    gravity = 0.82;
+    isErratic = true;
+    moveZone = true;
+    blink = true;
+    message = "Niebla médica en los monitores del gremio.";
+  } else {
+    const extra = level - 5;
+    zoneSize = Math.max(0.022, 0.075 - extra * 0.005);
+    gravity = 0.90 + extra * 0.12;
+    isErratic = true;
+    moveZone = true;
+    blink = true;
+    message = `Prueba de Resistencia Imposible — Nivel ${level}.`;
+  }
+
+  return { level, zoneSize, gravity, impulse, duration, isErratic, moveZone, blink, message };
+}
+
+const TRANSITION_PHRASES = [
+  "Los examinadores médicos dudan de que tengas pulso humano.",
+  "Sorprendente. Un topo con soplo en el corazón lo habría hecho igual.",
+  "El gremio anota en tu ficha: 'Sujeto milagrosamente con vida'.",
+  "El estetoscopio del examinador acaba de pedir la baja laboral.",
+  "Mantuviste el ritmo por pura cabezonería burocrática.",
+  "Tu corazón resiste más que tu sentido de la dignidad.",
+  "La camilla de urgencias esperará al siguiente nivel.",
+  "El gremio consulta si tu sangre contiene poción o pura suerte.",
 ];
 
-const SUCCESS_COMMENTS = [
-  "Inexplicablemente sigues respirando.",
-  "Tus pulmones de acero ocultan un cerebro de corcho.",
-  "Soportaste la toxina. El Tribunal está decepcionado.",
-  "Lamentablemente, has sobrevivido.",
-];
-
-const SABOTAGE_ANNOUNCEMENTS = {
-  3:  "Nivel 3. Fuga de gas neurotóxico verde.\nRáfagas imprevistas desestabilizarán la aguja.",
-  5:  "Nivel 5. Calambre muscular inducido.\nSus brazos temblarán sin previo aviso.",
-  7:  "Nivel 7. Desplazamiento de la dosis segura.\nLa zona de equilibrio ya no está fija.",
-  10: "Nivel 10. Inversiones de gravedad tóxica.\nLa física de la cámara ha sido saboteada.",
-};
+function getConstitutionVerdict(score) {
+  if (score <= 3) return "Dictamen del Tribunal: Salud de lechuga marchita. Un estornudo de trasgo le causaría la muerte.";
+  if (score <= 6) return "Dictamen del Tribunal: Resistencia raquítica. El tribunal le receta sopa de ortigas y no molestar.";
+  if (score <= 10) return "Dictamen del Tribunal: Pulso vital estable. Puede aguantar un golpe de barra de taberna sin morir.";
+  if (score <= 15) return "Dictamen del Tribunal: Constitución de mulo. Aguanta la peste de mazmorra sin inmutarse.";
+  return "Dictamen del Tribunal: Inmortalidad sospechosa. Se investigará si es un no-muerto camuflado.";
+}
 
 export class ConstitutionScene extends Phaser.Scene {
   constructor() {
@@ -41,18 +90,18 @@ export class ConstitutionScene extends Phaser.Scene {
     this._challenge     = data?.challenge ?? CHALLENGES.CONSTITUTION;
     this._sheetData     = data?.sheet ?? null;
     this._currentLevel  = 1;
-    this._maxLevels     = 20;
+    this._maxLevels     = TOTAL_ROUNDS;
     this._alive         = true;
     this._inCountdown   = true;
     this._score         = 0;
-    this._gaugeVal      = 50; // 0 a 100
-    this._holdTime      = 0;  // 0 a 1.5 segundos
-    this._requiredHold  = 1.5;
-    this._zoneT         = 0;
 
-    this._tremorTimer   = null;
-    this._gasBurstTimer = null;
-    this._gravityDir    = -1; // -1 cae abajo, +1 sube arriba
+    this._health        = 0.5;
+    this._zoneCenter    = 0.5;
+    this._timer         = 0;
+    this._timeInRound   = 0;
+    this._graceTimer    = 0;
+    this._blinkTimer    = 0;
+    this._isIndicatorVisible = true;
   }
 
   create() {
@@ -82,13 +131,13 @@ export class ConstitutionScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#f0e6d3", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    this.add.text(W / 2, 160, "PULSA rítmicamente para mantener\nla aguja dentro de la ZONA VERDE", {
-      fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#8abf9e", resolution: 2, align: "center", lineSpacing: 8,
+    this._messageText = this.add.text(W / 2, 160, "Mantenga el pulso en la zona verde con toques acompasados.", {
+      fontFamily: FONTS.PRIMARY, fontSize: "15px", color: "#8abf9e", resolution: 2, align: "center", lineSpacing: 8, wordWrap: { width: W - 80 },
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
     // Medidor Vertical Principal Centrado
     const mX = W / 2;
-    const mY = H / 2 - 60;
+    const mY = H / 2 - 50;
     const mW = 86;
     const mH = 380;
 
@@ -99,33 +148,23 @@ export class ConstitutionScene extends Phaser.Scene {
     this.add.rectangle(mX, mY, mW + 16, mH + 16, COLORS.BG_DARK, 1)
       .setStrokeStyle(4, 0x2d6a4f).setDepth(DEPTHS.UI_BG);
 
-    this._gaugeBg = this.add.rectangle(mX, mY, mW, mH, 0x112215, 1)
-      .setDepth(DEPTHS.UI_BG + 1);
+    this.add.rectangle(mX, mY, mW, mH, 0x112215, 1).setDepth(DEPTHS.UI_BG + 1);
 
-    // Indicadores discretos de tope
-    this.add.text(mX + mW / 2 + 15, mY - mH / 2 + 10, "◄ MÁXIMO", {
-      fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#4caf77", resolution: 2,
-    }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
-
-    this.add.text(mX + mW / 2 + 15, mY + mH / 2 - 10, "◄ MÍNIMO", {
-      fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#ff4444", resolution: 2,
-    }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
-
-    // Zona Segura Cómoda (130px de alto)
-    this._targetZone = this.add.rectangle(mX, mY, mW - 8, 130, 0x2d6a4f, 0.7)
+    // Franja Verde Objetivo
+    this._targetZone = this.add.rectangle(mX, mY, mW - 8, 140, 0x2d6a4f, 0.7)
       .setDepth(DEPTHS.UI);
 
-    // Aguja
+    // Aguja Indicadora
     this._needle = this.add.rectangle(mX, mY, mW - 4, 18, 0x4caf77, 1)
       .setDepth(DEPTHS.UI + 1);
 
-    // Barra de Tiempo Horizontal Separada
+    // ── BARRA DE TIEMPO RESTANTE EN EL NIVEL ──────────────────────────────────
     const pX = W / 2;
     const pY = mY + mH / 2 + 75;
     const pW = 480;
     const pH = 24;
 
-    this.add.text(pX, pY - 22, "TIEMPO EN ZONA VERDE", {
+    this.add.text(pX, pY - 22, "TIEMPO RESTANTE DE RESISTENCIA", {
       fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#4caf77", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
@@ -134,112 +173,75 @@ export class ConstitutionScene extends Phaser.Scene {
 
     this.add.rectangle(pX, pY, pW, pH, 0x09170c, 1).setDepth(DEPTHS.UI_BG + 1);
 
-    this._progressFill = this.add.rectangle(pX - pW / 2, pY, 0, pH - 4, 0x4caf77, 1)
+    this._timerBarFill = this.add.rectangle(pX - pW / 2, pY, pW, pH - 4, 0x4caf77, 1)
       .setOrigin(0, 0.5).setDepth(DEPTHS.UI);
 
     // Hint Control
     const inputMode = this.registry.get("inputMode") ?? "keyboard";
-    let hintText = "[ ESPACIO ]";
-    if (inputMode === "mouse") hintText = "[ CLICK IZQUIERDO ]";
-    else if (inputMode === "touch") hintText = "[ TOCA LA PANTALLA ]";
+    let hintText = "[ ESPACIO PARA DAR UN LATIDO ]";
+    if (inputMode === "mouse") hintText = "[ CLICK PARA DAR UN LATIDO ]";
+    else if (inputMode === "touch") hintText = "[ TOCA PARA DAR UN LATIDO ]";
 
     this.add.text(W / 2, pY + 50, hintText, {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#5a5a8a", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // Telón Oscuro desde el primer frame de carga
+    // Telón Oscuro desde frame 1
     this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x0a1a0f, 0.98)
-      .setDepth(250)
-      .setVisible(true);
+      .setDepth(250).setVisible(true);
 
-    // Cuenta atrás gigante
     this._countdownText = this.add.text(W / 2, H / 2, "", {
       fontFamily: FONTS.PRIMARY, fontSize: "120px", color: "#4caf77", resolution: 2,
     }).setOrigin(0.5).setDepth(251).setVisible(false);
 
-    // Diálogo Modal
     this._dialog = new DialogBox(this);
 
-    // Escuchadores de Entrada con avance de diálogo garantizado
-    this.input.keyboard?.on("keydown-SPACE", () => this._handleInput());
-    this.input.on("pointerdown",             () => this._handleInput());
+    // Escuchadores de Entrada (Latido)
+    this.input.keyboard?.on("keydown-SPACE", () => this._onTap());
+    this.input.on("pointerdown",             () => this._onTap());
 
     this.time.delayedCall(300, () => this._beginLevel());
   }
 
-  _handleInput() {
+  _onTap() {
     if (this._dialog.isVisible()) {
       this._dialog.advance();
       return;
     }
     if (!this._alive || this._inCountdown) return;
-    this._gaugeVal = Math.min(100, this._gaugeVal + 14 * (this._gravityDir === -1 ? 1 : -1));
+    const cfg = roundConfig(this._currentLevel - 1);
+    this._health = Math.min(1.0, this._health + cfg.impulse);
   }
 
   _beginLevel() {
-    const announcement = SABOTAGE_ANNOUNCEMENTS[this._currentLevel];
-    if (announcement) {
-      this._coverPanel.setVisible(true);
-      this._dialog.show(announcement, () => this._prepareLevel(), "Examinador Rotval");
-    } else {
-      this._prepareLevel();
-    }
+    this._prepareLevel();
   }
 
   _prepareLevel() {
     if (!this._alive) return;
-    this._clearTimers();
-
-    this._gaugeVal   = 50;
-    this._holdTime   = 0;
-    this._zoneT      = 0;
-    this._gravityDir = -1;
-    this._targetZone.setY(this._mY);
+    const cfg = roundConfig(this._currentLevel - 1);
+    this._health      = 0.5;
+    this._zoneCenter  = 0.5;
+    this._timer       = cfg.duration;
+    this._timeInRound = 0;
+    this._graceTimer  = 1.3;
+    this._blinkTimer  = 0;
+    this._isIndicatorVisible = true;
     this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
+    this._messageText.setText(cfg.message);
     this._inCountdown = true;
-    this._progressFill.setSize(0, 20);
 
     this._coverPanel.setVisible(true);
 
     this._runCountdown(() => {
-      if (!this._alive) return;
       this._coverPanel.setVisible(false);
       this._inCountdown = false;
-      this._holdTime = 0;
-
-      // ── SABOTAJE 1: RÁFAGAS DE GAS NEUROTÓXICO (Nivel 3+) ───────────────────
-      if (this._currentLevel >= 3) {
-        this._gasBurstTimer = this.time.addEvent({
-          delay: Phaser.Math.Between(1400, 2400),
-          loop: true,
-          callback: () => {
-            if (!this._alive || this._inCountdown) return;
-            this.cameras.main.flash(200, 45, 140, 60, true);
-            const burstPush = Phaser.Math.Between(-18, 18);
-            this._gaugeVal = Phaser.Math.Clamp(this._gaugeVal + burstPush, 10, 90);
-          },
-        });
-      }
-
-      // ── SABOTAJE 2: CALAMBRES MUSCULARES Y TEMBLOR CONTINUO (Nivel 5+) ──────
-      if (this._currentLevel >= 5) {
-        this._tremorTimer = this.time.addEvent({
-          delay: Phaser.Math.Between(1000, 1800),
-          loop: true,
-          callback: () => {
-            if (!this._alive || this._inCountdown) return;
-            this.cameras.main.shake(200, 0.007);
-            this._gaugeVal = Phaser.Math.Clamp(this._gaugeVal + Phaser.Math.Between(-12, 12), 15, 85);
-          },
-        });
-      }
     });
   }
 
   _runCountdown(onComplete) {
     const steps = ["3", "2", "1", "¡YA!"];
     let i = 0;
-
     const next = () => {
       if (!this._alive) return;
       if (i >= steps.length) {
@@ -268,65 +270,86 @@ export class ConstitutionScene extends Phaser.Scene {
     next();
   }
 
-  _clearTimers() {
-    if (this._tremorTimer) { this._tremorTimer.remove(); this._tremorTimer = null; }
-    if (this._gasBurstTimer) { this._gasBurstTimer.remove(); this._gasBurstTimer = null; }
-  }
-
   update(time, delta) {
     if (!this._alive || this._inCountdown || this._dialog.isVisible()) return;
 
     const dt = delta / 1000;
-    const level = this._currentLevel;
+    const cfg = roundConfig(this._currentLevel - 1);
 
-    // Empuje constante de toxina
-    const decaySpeed = 16 + level * 1.6;
-    this._gaugeVal += decaySpeed * this._gravityDir * dt;
-    this._gaugeVal = Phaser.Math.Clamp(this._gaugeVal, 0, 100);
+    this._timeInRound += dt;
+    this._timer -= dt;
 
-    // Colapso si cae al fondo absoluto (<= 0)
-    if (this._gaugeVal <= 0) {
-      this._failLevel();
-      return;
+    if (this._graceTimer > 0) {
+      this._graceTimer -= dt;
     }
 
+    // Desplazamiento de franja objetivo (Nivel 4+)
+    if (cfg.moveZone) {
+      const wave = Math.sin(this._timeInRound * (2.2 + (this._currentLevel - 1) * 0.4));
+      const maxOffset = 0.36 - cfg.zoneSize / 2;
+      this._zoneCenter = 0.5 + wave * maxOffset;
+    } else {
+      this._zoneCenter = 0.5;
+    }
+
+    // Gravedad y empuje errático (Nivel 3+)
+    let currentGravity = this._graceTimer > 0 ? cfg.gravity * 0.4 : cfg.gravity;
+    if (cfg.isErratic && this._graceTimer <= 0) {
+      const pulse = 1 + 0.6 * Math.sin(this._timeInRound * 7) + 0.3 * Math.cos(this._timeInRound * 13);
+      currentGravity *= Math.max(0.3, pulse);
+    }
+    this._health -= currentGravity * dt;
+
+    // Parpadeo de visibilidad (Nivel 5+)
+    if (cfg.blink && this._graceTimer <= 0) {
+      this._blinkTimer += dt;
+      if (this._blinkTimer >= 0.18) {
+        this._blinkTimer = 0;
+        this._isIndicatorVisible = !this._isIndicatorVisible;
+      }
+    } else {
+      this._isIndicatorVisible = true;
+    }
+
+    // Comprobar colisión fuera de zona objetivo tras tiempo de gracia
+    if (this._graceTimer <= 0) {
+      const zoneStart = this._zoneCenter - cfg.zoneSize / 2;
+      const zoneEnd   = this._zoneCenter + cfg.zoneSize / 2;
+
+      if (this._health < zoneStart || this._health > zoneEnd) {
+        this._failLevel();
+        return;
+      }
+    }
+
+    // Renderizar Posiciones en Pantalla
     const mH = this._mH;
     const minY = this._mY - mH / 2 + 10;
     const maxY = this._mY + mH / 2 - 10;
-    const nY = maxY - (this._gaugeVal / 100) * (maxY - minY);
 
+    // Posición Aguja
+    const nY = maxY - (this._health) * (maxY - minY);
     this._needle.setY(nY);
+    this._needle.setAlpha(this._isIndicatorVisible ? 1.0 : 0.25);
 
-    // ── SABOTAJE 3: DESPLAZAMIENTO OSCILANTE DE ZONA SEGUDA (Nivel 7+) ────────
-    if (level >= 7) {
-      this._zoneT += dt;
-      const offset = Math.sin(this._zoneT * (1.2 + level * 0.12)) * (35 + level * 3);
-      this._targetZone.setY(this._mY + offset);
+    // Posición Franja Verde
+    const zY = maxY - (this._zoneCenter) * (maxY - minY);
+    this._targetZone.setY(zY);
+    this._targetZone.setSize(86 - 8, cfg.zoneSize * mH);
+
+    // Barra de tiempo horizontal
+    const progressRatio = Math.max(0, this._timer / cfg.duration);
+    this._timerBarFill.setSize(progressRatio * 476, 20);
+
+    // Nivel Completado con éxito
+    if (this._timer <= 0) {
+      this._passLevel();
     }
-
-    // Comprobar zona verde
-    const tzTop = this._targetZone.y - this._targetZone.height / 2;
-    const tzBot = this._targetZone.y + this._targetZone.height / 2;
-
-    if (nY >= tzTop && nY <= tzBot) {
-      this._holdTime += dt;
-      if (this._holdTime >= this._requiredHold) {
-        this._passLevel();
-        return;
-      }
-    } else {
-      this._holdTime = Math.max(0, this._holdTime - dt * 0.4);
-    }
-
-    const ratio = Math.min(1.0, Math.max(0, this._holdTime / this._requiredHold));
-    const fillW = ratio * 476;
-    this._progressFill.setSize(fillW, 20);
   }
 
   _passLevel() {
     if (this._inCountdown || !this._alive) return;
     this._inCountdown = true;
-    this._clearTimers();
     this._score = this._currentLevel;
 
     if (this._currentLevel >= this._maxLevels) {
@@ -334,27 +357,30 @@ export class ConstitutionScene extends Phaser.Scene {
       return;
     }
 
+    const phrase = TRANSITION_PHRASES[(this._currentLevel - 1) % TRANSITION_PHRASES.length];
     this._currentLevel++;
     this.cameras.main.flash(150, 76, 175, 119, true);
-    this.time.delayedCall(250, () => this._beginLevel());
+
+    this._dialog.show(`"${phrase}"`, () => this._prepareLevel(), "Examinador Rotval");
   }
 
   _failLevel() {
     this._alive = false;
-    this._clearTimers();
     this._coverPanel.setVisible(true);
-    const comment = Phaser.Math.RND.pick(FAIL_COMMENTS);
-    this._dialog.show(`FIN DE LA PRUEBA\n\n${comment}\n\nPuntuación: ${this._score} / 20\n\n${getVerdict(this._score)}`, () => {
+    const verdict = getConstitutionVerdict(this._score);
+
+    this._dialog.show(`FIN DE LA PRUEBA\n\nPuntuación: ${this._score} / 20\n\n${verdict}`, () => {
       this._returnToReport(this._score);
     }, "Examinador Rotval");
   }
 
   _endGame(perfect = false) {
     this._alive = false;
-    this._clearTimers();
     this._coverPanel.setVisible(true);
     const finalScore = this._score;
-    this._dialog.show(`¡RESISTENCIA SUPERADA!\n\nPuntuación: ${finalScore} / 20\n\n${getVerdict(finalScore)}`, () => {
+    const verdict = getConstitutionVerdict(finalScore);
+
+    this._dialog.show(`¡RESISTENCIA SUPERADA!\n\nPuntuación: ${finalScore} / 20\n\n${verdict}`, () => {
       this._returnToReport(finalScore);
     }, "Examinador Rotval");
   }

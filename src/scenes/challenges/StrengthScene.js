@@ -1,7 +1,7 @@
 /**
  * StrengthScene.js — Prueba de Fuerza del Gremio (720×1280 HD Vertical)
- * MANTENER PRESIONADO (mecanismo original de presión sostenida con zonas de resistencia),
- * con anuncios del examinador, sabotajes y cuenta atrás con cadencia pausada.
+ * 100% CÓDIGO FIEL AL ORIGINAL (`heroic-failure/ui/strength-screen.js`).
+ * Mecánica: MANTENER PULSADO PARA CARGAR LA BARRA Y SOLTAR EXACTAMENTE DENTRO DE LA ZONA OBJETIVO.
  */
 
 import * as Phaser from "phaser";
@@ -9,28 +9,75 @@ import {
   COLORS, FONTS, SCENES, TIMING, DEPTHS, CHALLENGES,
 } from "../../utils/constants.js";
 import { DialogBox } from "../../ui/DialogBox.js";
-import { getVerdict } from "../../utils/helpers.js";
 
-const FAIL_COMMENTS = [
-  "No has levantado ni la sospecha del Tribunal.",
-  "Esa piedra pesaba 2 kilos. Eres patético.",
-  "La resistencia del peso destruyó tus débiles brazos.",
-  "El yunque ganó por goleada.",
-  "Soltaste el peso por pura cobardía muscular.",
+const TOTAL_ROUNDS = 20;
+
+function roundConfig(roundIndex) {
+  const level = roundIndex + 1;
+  let zoneSize = 0.38;
+  let baseSpeed = 0.50;
+  let isErratic = false;
+  let moveZone = false;
+  let blink = false;
+  let message = "";
+
+  if (level === 1) {
+    zoneSize = 0.38;
+    baseSpeed = 0.52;
+    message = "La pesa de hierro ordinario. Mantén pulsado y suelta en la zona.";
+  } else if (level === 2) {
+    zoneSize = 0.26;
+    baseSpeed = 0.82;
+    message = "Aumentando el pesaje para el expediente del gremio.";
+  } else if (level === 3) {
+    zoneSize = 0.16;
+    baseSpeed = 1.20;
+    isErratic = true;
+    message = "Pesaje con hierro encantado. Controle el impulso de carga.";
+  } else if (level === 4) {
+    zoneSize = 0.11;
+    baseSpeed = 1.60;
+    isErratic = true;
+    moveZone = true;
+    message = "Evaluación de resistencia física avanzada. La franja se mueve.";
+  } else if (level === 5) {
+    zoneSize = 0.075;
+    baseSpeed = 2.05;
+    isErratic = true;
+    moveZone = true;
+    blink = true;
+    message = "Tensión muscular extrema bajo supervisión de los Agentes.";
+  } else {
+    const extra = level - 5;
+    zoneSize = Math.max(0.015, 0.058 - extra * 0.006);
+    baseSpeed = 2.35 + extra * 0.26;
+    isErratic = true;
+    moveZone = true;
+    blink = true;
+    message = `Prueba de Titanes — Nivel ${level}.`;
+  }
+
+  return { level, zoneSize, baseSpeed, isErratic, moveZone, blink, message };
+}
+
+const TRANSITION_PHRASES = [
+  "El yunque real no se rompió, pero tus muñecas piden compasión.",
+  "Sorprendente. Un orco con lumbalgia habría doblado más el hierro.",
+  "El tribunal del gremio anota que tus bíceps han superado la prueba de milagro.",
+  "Tus fibras musculares acaban de ganar 2 gramos de dignidad administrativa.",
+  "El gremio aconseja no intentar levantar jarras de cerveza con tanto ímpetu.",
+  "Sobreviviste a la carga por los pelos de un enano minero.",
+  "Un esfuerzo remarcable para alguien con tu complexión de junco seco.",
+  "Los examinadores dudan si fue potencia física o pánico acumulado.",
 ];
 
-const SUCCESS_COMMENTS = [
-  "Fuerza bruta sin cerebro. Típico.",
-  "Soportaste el peso. El Tribunal suspira decepcionado.",
-  "Elevación aceptable. Tus músculos siguen siendo patéticos.",
-];
-
-const SABOTAGE_ANNOUNCEMENTS = {
-  3:  "Nivel 3. Resistencia magnética variable.\nEl peso dará tirones bruscos hacia abajo.",
-  5:  "Nivel 5. Grasa de cerdo en el agarre.\nLa barra resbalará si mantienes demasiada tensión.",
-  7:  "Nivel 7. Oscilación de gravedad en la forja.\nEl medidor temblará salvajemente.",
-  10: "Nivel 10. Peso del Gran Yunque Imperial.\nSolo un bárbaro de leyenda o un ingenuo lo intentaría.",
-};
+function getStrengthVerdict(score) {
+  if (score <= 3) return "Dictamen del Tribunal: Brazos como fideos de taberna. El peso del formulario casi le quiebra la muñeca.";
+  if (score <= 6) return "Dictamen del Tribunal: Fuerza ridícula. La pesa del Nivel 4 ha opinado sobre sus músculos.";
+  if (score <= 10) return "Dictamen del Tribunal: Potencia bruta aceptable. Sirve para cargar sacos de carbón del gremio.";
+  if (score <= 15) return "Dictamen del Tribunal: ¡Titánico! El tribunal ha tenido que apartarse de la mesa.";
+  return "Dictamen del Tribunal: ¡Fuerza de Gigante! Ha levantado el gremio entero por los cimientos.";
+}
 
 export class StrengthScene extends Phaser.Scene {
   constructor() {
@@ -41,14 +88,18 @@ export class StrengthScene extends Phaser.Scene {
     this._challenge     = data?.challenge ?? CHALLENGES.STRENGTH;
     this._sheetData     = data?.sheet ?? null;
     this._currentLevel  = 1;
-    this._maxLevels     = 20;
+    this._maxLevels     = TOTAL_ROUNDS;
     this._alive         = true;
     this._inCountdown   = true;
     this._score         = 0;
-    this._power         = 0; // 0 a 100
-    this._isPressing    = false;
-    this._holdTimer     = 0;
-    this._targetHold    = 2.0; // 2 segundos manteniendo arriba para ganar el nivel
+
+    this._charge        = 0;
+    this._zoneCenter    = 0.5;
+    this._timeInRound   = 0;
+    this._isHolding     = false;
+    this._hasCharged    = false;
+    this._blinkTimer    = 0;
+    this._isChargeVisible = true;
   }
 
   create() {
@@ -78,40 +129,41 @@ export class StrengthScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#f0e6d3", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    this.add.text(W / 2, 160, "MANTÉN PRESIONADO para empujar la roca\ny sostenerla en la zona superior rojas", {
-      fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#ff8888", resolution: 2, align: "center", lineSpacing: 8,
+    this._messageText = this.add.text(W / 2, 160, "MANTÉN PULSADO PARA CARGAR Y SUELTA EN LA ZONA OBJETIVO", {
+      fontFamily: FONTS.PRIMARY, fontSize: "15px", color: "#ff8888", resolution: 2, align: "center", lineSpacing: 8, wordWrap: { width: W - 80 },
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // Medidor Vertical de Fuerza
-    const mX = W / 2;
-    const mY = H / 2 - 30;
-    const mW = 90;
-    const mH = 400;
+    // ── Riel Horizontal de Carga (Carga de Izquierda a Derecha) ──────────────
+    const railX = W / 2;
+    const railY = H / 2;
+    const railW = 540;
+    const railH = 50;
 
-    this._mX = mX;
-    this._mY = mY;
-    this._mH = mH;
+    this._railX = railX;
+    this._railY = railY;
+    this._railW = railW;
 
-    this.add.rectangle(mX, mY, mW + 16, mH + 16, COLORS.BG_DARK, 1)
+    this.add.rectangle(railX, railY, railW + 16, railH + 16, COLORS.BG_DARK, 1)
       .setStrokeStyle(4, 0xc42b1c).setDepth(DEPTHS.UI_BG);
 
-    this._barBg = this.add.rectangle(mX, mY, mW, mH, 0x240c09, 1).setDepth(DEPTHS.UI_BG + 1);
+    this.add.rectangle(railX, railY, railW, railH, 0x240c09, 1)
+      .setDepth(DEPTHS.UI_BG + 1);
 
-    // Zona objetivo de victoria arriba (top 25% del medidor)
-    this._topZone = this.add.rectangle(mX, mY - mH / 2 + 50, mW - 8, 100, 0x882222, 0.6)
+    // Franja Objetivo Dorada
+    this._targetZone = this.add.rectangle(railX, railY, 100, railH - 4, COLORS.GOLD, 0.75)
       .setDepth(DEPTHS.UI);
 
-    // Relleno de potencia que sube
-    this._powerFill = this.add.rectangle(mX, mY + mH / 2, mW - 8, 0, 0xff4444, 1)
-      .setOrigin(0.5, 1).setDepth(DEPTHS.UI);
+    // Relleno de Carga
+    this._chargeBarFill = this.add.rectangle(railX - railW / 2, railY, 0, railH - 4, 0xff4444, 1)
+      .setOrigin(0, 0.5).setDepth(DEPTHS.UI + 1);
 
-    // Indicadores
+    // Hint Control
     const inputMode = this.registry.get("inputMode") ?? "keyboard";
-    let hintText = "[ MANTÉN PRESIONADO ESPACIO ]";
-    if (inputMode === "mouse") hintText = "[ MANTÉN PRESIONADO CLICK ]";
-    else if (inputMode === "touch") hintText = "[ MANTÉN PRESIONADA LA PANTALLA ]";
+    let hintText = "[ MANTÉN PULSADO Y SUELTA ESPACIO ]";
+    if (inputMode === "mouse") hintText = "[ MANTÉN PULSADO Y SUELTA CLICK ]";
+    else if (inputMode === "touch") hintText = "[ MANTÉN PULSADO Y SUELTA LA PANTALLA ]";
 
-    this.add.text(W / 2, mY + mH / 2 + 50, hintText, {
+    this.add.text(W / 2, railY + 80, hintText, {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#ff8888", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
@@ -119,52 +171,61 @@ export class StrengthScene extends Phaser.Scene {
     this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x1a0d0a, 0.98)
       .setDepth(250).setVisible(true);
 
-    // Cuenta atrás gigante
     this._countdownText = this.add.text(W / 2, H / 2, "", {
       fontFamily: FONTS.PRIMARY, fontSize: "120px", color: "#ff4444", resolution: 2,
     }).setOrigin(0.5).setDepth(251).setVisible(false);
 
     this._dialog = new DialogBox(this);
 
-    // Gestor de eventos Mantener Presionado
-    this.input.keyboard?.on("keydown-SPACE", () => {
-      if (this._dialog.isVisible()) { this._dialog.advance(); return; }
-      this._isPressing = true;
-    });
-    this.input.keyboard?.on("keyup-SPACE", () => { this._isPressing = false; });
+    // Escuchadores MANTENER PULSADO y SOLTAR
+    this.input.keyboard?.on("keydown-SPACE", () => this._onPressStart());
+    this.input.keyboard?.on("keyup-SPACE",   () => this._onPressRelease());
 
-    this.input.on("pointerdown", () => {
-      if (this._dialog.isVisible()) { this._dialog.advance(); return; }
-      this._isPressing = true;
-    });
-    this.input.on("pointerup", () => { this._isPressing = false; });
+    this.input.on("pointerdown", () => this._onPressStart());
+    this.input.on("pointerup",   () => this._onPressRelease());
 
     this.time.delayedCall(300, () => this._beginLevel());
   }
 
-  _beginLevel() {
-    const announcement = SABOTAGE_ANNOUNCEMENTS[this._currentLevel];
-    if (announcement) {
-      this._coverPanel.setVisible(true);
-      this._dialog.show(announcement, () => this._prepareLevel(), "Examinador Rotval");
-    } else {
-      this._prepareLevel();
+  _onPressStart() {
+    if (this._dialog.isVisible()) {
+      this._dialog.advance();
+      return;
     }
+    if (!this._alive || this._inCountdown) return;
+    this._isHolding = true;
+  }
+
+  _onPressRelease() {
+    if (this._dialog.isVisible()) return;
+    if (!this._alive || this._inCountdown) return;
+    if (this._isHolding && this._hasCharged) {
+      this._isHolding = false;
+      this._resolveRound();
+    }
+  }
+
+  _beginLevel() {
+    this._prepareLevel();
   }
 
   _prepareLevel() {
     if (!this._alive) return;
-    this._power = 0;
-    this._holdTimer = 0;
-    this._isPressing = false;
+    const cfg = roundConfig(this._currentLevel - 1);
+    this._charge      = 0;
+    this._timeInRound = 0;
+    this._isHolding   = false;
+    this._hasCharged  = false;
+    this._zoneCenter  = 0.5;
     this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
+    this._messageText.setText(cfg.message);
     this._inCountdown = true;
+
     this._coverPanel.setVisible(true);
 
     this._runCountdown(() => {
       this._coverPanel.setVisible(false);
       this._inCountdown = false;
-      this._levelTime = 6.0; // 6 segundos de tiempo límite total
     });
   }
 
@@ -203,44 +264,68 @@ export class StrengthScene extends Phaser.Scene {
     if (!this._alive || this._inCountdown || this._dialog.isVisible()) return;
 
     const dt = delta / 1000;
-    const level = this._currentLevel;
+    const cfg = roundConfig(this._currentLevel - 1);
+    this._timeInRound += dt;
 
-    // Resistencia del peso (caída)
-    const gravityDrop = 35 + level * 3.5;
-    // Potencia al mantener presionado
-    const pushPower   = 65 + level * 2.0;
-
-    if (this._isPressing) {
-      this._power = Math.min(100, this._power + pushPower * dt);
+    // Zona objetivo en movimiento (Nivel 4+)
+    if (cfg.moveZone) {
+      const wave = Math.sin(this._timeInRound * (2.2 + (this._currentLevel - 1) * 0.35));
+      const maxOffset = 0.36 - cfg.zoneSize / 2;
+      this._zoneCenter = 0.5 + wave * maxOffset;
     } else {
-      this._power = Math.max(0, this._power - gravityDrop * dt);
+      this._zoneCenter = 0.5;
     }
 
-    // Sabotaje: Tirones bruscos a partir de Nivel 3
-    if (level >= 3 && Phaser.Math.Between(0, 100) < 3) {
-      this._power = Math.max(0, this._power - 8);
-      this.cameras.main.shake(150, 0.005);
+    // Velocidad de carga y pulsos erráticos (Nivel 3+)
+    let currentSpeed = cfg.baseSpeed;
+    if (cfg.isErratic) {
+      const pulse = 1 + 0.65 * Math.sin(this._timeInRound * 8) + 0.3 * Math.cos(this._timeInRound * 14);
+      currentSpeed *= Math.max(0.2, pulse);
     }
 
-    this._levelTime -= dt;
+    // Carga continua mientras mantienes pulsado
+    if (this._isHolding) {
+      this._charge += currentSpeed * dt;
+      if (this._charge > 0.02) this._hasCharged = true;
+    }
 
-    const mH = this._mH;
-    const fillH = (this._power / 100) * mH;
-    this._powerFill.setSize(90 - 8, fillH);
+    // Sobrecarga (te pasaste de 1.0 -> Fallo inmediato)
+    if (this._charge >= 1.0) {
+      this._charge = 1.0;
+      this._failLevel();
+      return;
+    }
 
-    // Comprobar si está en la zona superior de victoria (>= 75%)
-    if (this._power >= 75) {
-      this._holdTimer += dt;
-      if (this._holdTimer >= this._targetHold) {
-        this._passLevel();
-        return;
+    // Parpadeo de visibilidad (Nivel 5+)
+    if (cfg.blink && this._isHolding) {
+      this._blinkTimer += dt;
+      if (this._blinkTimer >= 0.16) {
+        this._blinkTimer = 0;
+        this._isChargeVisible = !this._isChargeVisible;
       }
     } else {
-      this._holdTimer = Math.max(0, this._holdTimer - dt);
+      this._isChargeVisible = true;
     }
 
-    // Límite de tiempo agotado sin sostener el peso
-    if (this._levelTime <= 0) {
+    // Renderizar Posiciones en Pantalla
+    const zoneStartPct = this._zoneCenter - cfg.zoneSize / 2;
+    const zX = this._railX - this._railW / 2 + zoneStartPct * this._railW + (cfg.zoneSize * this._railW) / 2;
+    this._targetZone.setPosition(zX, this._railY);
+    this._targetZone.setSize(cfg.zoneSize * this._railW, 46);
+
+    const fillW = Math.max(0, this._charge * this._railW);
+    this._chargeBarFill.setSize(fillW, 46);
+    this._chargeBarFill.setAlpha(this._isChargeVisible ? 1.0 : 0.25);
+  }
+
+  _resolveRound() {
+    const cfg = roundConfig(this._currentLevel - 1);
+    const zoneStart = this._zoneCenter - cfg.zoneSize / 2;
+    const zoneEnd   = this._zoneCenter + cfg.zoneSize / 2;
+
+    if (this._charge >= zoneStart && this._charge <= zoneEnd) {
+      this._passLevel();
+    } else {
       this._failLevel();
     }
   }
@@ -249,20 +334,25 @@ export class StrengthScene extends Phaser.Scene {
     if (this._inCountdown || !this._alive) return;
     this._inCountdown = true;
     this._score = this._currentLevel;
+
     if (this._currentLevel >= this._maxLevels) {
       this._endGame(true);
       return;
     }
+
+    const phrase = TRANSITION_PHRASES[(this._currentLevel - 1) % TRANSITION_PHRASES.length];
     this._currentLevel++;
     this.cameras.main.flash(150, 255, 68, 68, true);
-    this.time.delayedCall(250, () => this._beginLevel());
+
+    this._dialog.show(`"${phrase}"`, () => this._prepareLevel(), "Examinador Rotval");
   }
 
   _failLevel() {
     this._alive = false;
     this._coverPanel.setVisible(true);
-    const comment = Phaser.Math.RND.pick(FAIL_COMMENTS);
-    this._dialog.show(`FIN DE LA PRUEBA\n\n${comment}\n\nPuntuación: ${this._score} / 20\n\n${getVerdict(this._score)}`, () => {
+    const verdict = getStrengthVerdict(this._score);
+
+    this._dialog.show(`FIN DE LA PRUEBA\n\nPuntuación: ${this._score} / 20\n\n${verdict}`, () => {
       this._returnToReport(this._score);
     }, "Examinador Rotval");
   }
@@ -271,7 +361,9 @@ export class StrengthScene extends Phaser.Scene {
     this._alive = false;
     this._coverPanel.setVisible(true);
     const finalScore = this._score;
-    this._dialog.show(`¡FUERZA TITÁNICA!\n\nPuntuación: ${finalScore} / 20\n\n${getVerdict(finalScore)}`, () => {
+    const verdict = getStrengthVerdict(finalScore);
+
+    this._dialog.show(`¡FUERZA TITÁNICA SUPERADA!\n\nPuntuación: ${finalScore} / 20\n\n${verdict}`, () => {
       this._returnToReport(finalScore);
     }, "Examinador Rotval");
   }
