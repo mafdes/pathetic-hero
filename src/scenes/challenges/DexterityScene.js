@@ -255,7 +255,6 @@ export class DexterityScene extends Phaser.Scene {
   _beginLevel() {
     const announcement = SABOTAGE_ANNOUNCEMENTS[this._currentLevel];
     if (announcement) {
-      this._coverPanel.setVisible(true);
       this._dialog.show(announcement, () => this._prepareAndStartLevel(), "Examinador Rotval");
     } else {
       this._prepareAndStartLevel();
@@ -304,11 +303,8 @@ export class DexterityScene extends Phaser.Scene {
     this._inCountdown = true;
     this._inputCooldown = true;
 
-    this._coverPanel.setVisible(true);
-
     this._runCountdown(() => {
       if (!this._alive) return;
-      this._coverPanel.setVisible(false);
       this._inCountdown   = false;
       this._inputCooldown = false;
 

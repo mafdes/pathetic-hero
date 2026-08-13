@@ -125,10 +125,8 @@ export class ConstitutionScene extends Phaser.Scene {
     this._gaugeVal = 50;
     this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
     this._inCountdown = true;
-    this._coverPanel.setVisible(true);
 
     this._runCountdown(() => {
-      this._coverPanel.setVisible(false);
       this._inCountdown = false;
       this._holdTime = 0;
     });
