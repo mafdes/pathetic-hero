@@ -1,32 +1,33 @@
 /**
  * BootScene.js — Primera escena que se ejecuta al arrancar el juego.
- * Carga únicamente los assets mínimos para mostrar la pantalla de carga:
- * la fuente pixel y el logo. El resto de assets se carga en PreloadScene.
+ * Carga y fuerza la descarga de la fuente pixel "Press Start 2P" en la memoria de Canvas 2D
+ * antes de permitir avanzar a PreloadScene.
  */
 
 import * as Phaser from "phaser";
-import { COLORS, SCENES } from "../utils/constants.js";
+import { SCENES } from "../utils/constants.js";
 
 export class BootScene extends Phaser.Scene {
   constructor() {
     super({ key: SCENES.BOOT });
   }
 
-  preload() {
-    // La fuente Press Start 2P se carga via <link> en index.html.
-    // Aquí solo aseguramos que esté disponible antes de PreloadScene.
-    // Phaser 4: usamos WebFontLoader o un pequeño trick con document.fonts.
-  }
-
   create() {
-    // Verificar que la fuente está lista antes de avanzar
-    if (document.fonts) {
-      document.fonts.ready.then(() => {
+    // Forzar la carga completa de la fuente web para que Canvas 2D no use la fuente fallback (Times/Arial)
+    if (document.fonts && document.fonts.load) {
+      Promise.all([
+        document.fonts.load('16px "Press Start 2P"'),
+        document.fonts.ready,
+      ]).then(() => {
+        // Pequeño retardo de 50ms para asegurar hidratación de la fuente en WebGL/Canvas
+        this.time.delayedCall(50, () => {
+          this.scene.start(SCENES.PRELOAD);
+        });
+      }).catch(() => {
         this.scene.start(SCENES.PRELOAD);
       });
     } else {
-      // Fallback: esperar 200ms y continuar
-      this.time.delayedCall(200, () => {
+      this.time.delayedCall(300, () => {
         this.scene.start(SCENES.PRELOAD);
       });
     }

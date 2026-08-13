@@ -38,15 +38,15 @@ export class IntroScene extends Phaser.Scene {
         .setDisplaySize(W, H).setAlpha(0.35).setDepth(DEPTHS.BG);
     }
 
-    // Texto principal centrado, grande (24px) y con interlineado proporcional ajustado (10px)
-    this._textObject = this.add.text(W / 2, H / 2 - 30, "", {
+    // Texto principal centrado con "Press Start 2P" a 18px y spacing compacto (6px)
+    this._textObject = this.add.text(W / 2, H / 2 - 20, "", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "24px",
+      fontSize: "18px",
       color: "#f0e6d3",
       resolution: 2,
       align: "center",
-      wordWrap: { width: 820 },
-      lineSpacing: 10,
+      wordWrap: { width: 800 },
+      lineSpacing: 6,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
     // Hint "SKIP"
