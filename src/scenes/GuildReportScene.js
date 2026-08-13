@@ -80,10 +80,12 @@ export class GuildReportScene extends Phaser.Scene {
 
     this.add.rectangle(cx, 130, W - 60, 3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
 
-    // Nombre aspirante
-    this.add.text(cx, 160, `Aspirante: ${this.sheet.name}`, {
+    // Nombre aspirante con auto-escalado de fuente para evitar desbordamientos
+    const nameStr = `Aspirante: "${this.sheet.name}"`;
+    const fontSz = nameStr.length > 30 ? "14px" : nameStr.length > 22 ? "16px" : "18px";
+    this.add.text(cx, 160, nameStr, {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "17px",
+      fontSize: fontSz,
       color: "#c8a97a",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);

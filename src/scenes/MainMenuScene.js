@@ -123,7 +123,7 @@ export class MainMenuScene extends Phaser.Scene {
       switch (id) {
         case "new":
           SaveManager.clear();
-          this.scene.start(SCENES.CONTROLS, { mode: "new" });
+          this.scene.start(SCENES.NAME_SELECTION);
           break;
         case "options":
           this.scene.start(SCENES.OPTIONS);
