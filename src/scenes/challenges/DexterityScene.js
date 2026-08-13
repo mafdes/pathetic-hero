@@ -1,7 +1,6 @@
 /**
  * DexterityScene.js — Prueba de Destreza del Gremio (720×1280 HD Vertical)
- * Sala retro pixel art: "Galería de Calibración de Arqueros".
- * Diálogos y cuenta atrás en capas superiores limpias.
+ * Incluye telón de cuenta atrás FULLSCREEN gigante (120px) y diálogos modales centrados.
  */
 
 import * as Phaser from "phaser";
@@ -173,26 +172,21 @@ export class DexterityScene extends Phaser.Scene {
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // ── Panel de Cobertura Opaco para Ocultar Redibujos durante Cuenta Atrás ──────
-    this._coverPanel = this.add.rectangle(W / 2, barY, barW + 30, barH + 60, COLORS.UI_PANEL, 1)
-      .setStrokeStyle(3, COLORS.GOLD_DARK)
-      .setDepth(150)
+    // ── TELÓN FULLSCREEN ENORME PARA LA CUENTA ATRÁS ─────────────────────────
+    this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x0d0613, 0.95)
+      .setDepth(250)
       .setVisible(false);
 
-    // Texto de Cuenta Atrás (3... 2... 1... ¡YA!) sobre el panel de cobertura
-    this._countdownText = this.add.text(W / 2, barY, "", {
+    // Texto de Cuenta Atrás ENORME (120px) en medio de la pantalla
+    this._countdownText = this.add.text(W / 2, H / 2, "", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "48px",
+      fontSize: "120px",
       color: "#d4a017",
       resolution: 2,
-    }).setOrigin(0.5).setDepth(151).setVisible(false);
+    }).setOrigin(0.5).setDepth(251).setVisible(false);
 
-    // ── Diálogo del Examinador (Posicionado ARRIBA en pantalla) ────────────────
-    this._dialog = new DialogBox(this, {
-      y: 110,
-      height: 240,
-      speaker: "Examinador Rotval",
-    });
+    // ── Diálogo Modal Centrado del Examinador (capa 300) ─────────────────────
+    this._dialog = new DialogBox(this);
 
     // ── Input ─────────────────────────────────────────────────────────────────
     this.input.keyboard?.on("keydown-SPACE", () => this._handleInput());
@@ -316,7 +310,7 @@ export class DexterityScene extends Phaser.Scene {
     this._inCountdown = true;
     this._inputCooldown = true;
 
-    // Activar panel de cobertura para ocultar reposicionamiento
+    // Telón Fullscreen activo para la cuenta atrás
     this._coverPanel.setVisible(true);
 
     this._runCountdown(() => {
@@ -377,7 +371,7 @@ export class DexterityScene extends Phaser.Scene {
       const isYa = text === "¡YA!";
       this._countdownText.setText(text)
         .setColor(isYa ? "#4caf77" : "#d4a017")
-        .setScale(1.4)
+        .setScale(1.3)
         .setVisible(true);
 
       this.tweens.add({
