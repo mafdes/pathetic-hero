@@ -1,31 +1,30 @@
 /**
- * IntroScene.js — Pantalla de créditos con typewriter (960×540)
+ * IntroScene.js — Pantalla de créditos narrativa (960×540)
+ * Texto fijo con anclaje superior-izquierdo para evitar saltos o re-centrados daltónicos durante el typewriter.
  */
 
 import * as Phaser from "phaser";
 import { COLORS, FONTS, FONT_SIZES, SCENES, TIMING, DEPTHS } from "../utils/constants.js";
 
-const INTRO_TEXT = `ANNO DOMINI 1347.
-
-El Imperio está en paz. Sus ciudades prosperan.
-Sus héroes... no tanto.
-
-El Gremio de Héroes lleva 300 años gestionando
-el fracaso ajeno con eficiencia burocrática impecable.
-
-Hoy, un nuevo aspirante llama a sus puertas.
-
-Tú.
-
-Dios nos coja confesados.`;
+const INTRO_PARAGRAPHS = [
+  "ANNO DOMINI 1347.",
+  "El Imperio está en paz. Sus ciudades prosperan.",
+  "Sus héroes... no tanto.",
+  "El Gremio de Héroes lleva 300 años gestionando el fracaso ajeno con eficiencia burocrática impecable.",
+  "Hoy, un nuevo aspirante llama a sus puertas.",
+  "Tú.",
+  "Dios nos coja confesados.",
+];
 
 export class IntroScene extends Phaser.Scene {
   constructor() {
     super({ key: SCENES.INTRO });
+    this._paragraphIndex = 0;
     this._charIndex = 0;
     this._typeTimer = null;
     this._done = false;
     this._skipCooldown = false;
+    this._displayedText = "";
   }
 
   create() {
@@ -40,16 +39,20 @@ export class IntroScene extends Phaser.Scene {
         .setDisplaySize(W, H).setAlpha(0.35).setDepth(DEPTHS.BG);
     }
 
-    // Texto principal GRANDE y bien distribuido para ocupar la pantalla completa
-    this._currentLineText = this.add.text(W / 2, H / 2 - 30, "", {
+    // Marco o contenedor de texto fijo (centrado en pantalla pero con origen superior-izquierdo)
+    const marginX = 80;
+    const marginY = 60;
+    const textWidth = W - (marginX * 2); // 800px de ancho fijo
+
+    this._textObject = this.add.text(marginX, marginY, "", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "22px", // Mucho más grande y visible
+      fontSize: "18px",
       color: "#f0e6d3",
-      resolution: 2,    // Renderizado en alta resolución para eliminar pixelado
-      align: "center",
-      wordWrap: { width: 840 },
-      lineSpacing: 20,  // Interlineado amplio y elegante
-    }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
+      resolution: 2,
+      align: "left",
+      wordWrap: { width: textWidth },
+      lineSpacing: 18,
+    }).setOrigin(0, 0).setDepth(DEPTHS.UI);
 
     // Hint "SKIP"
     this._skipHint = this.add.text(W - 24, H - 24, "[ CUALQUIER TECLA — SKIP ]", {
@@ -69,37 +72,49 @@ export class IntroScene extends Phaser.Scene {
 
     this.time.delayedCall(TIMING.TRANSITION_DURATION + 100, () => {
       this._skipCooldown = true;
-      this._startTyping();
+      this._startNextParagraph();
     });
 
     this.input.keyboard?.once("keydown", this._handleSkip, this);
     this.input.once("pointerdown", this._handleSkip, this);
   }
 
-  _startTyping() {
-    if (this._typeTimer) this._typeTimer.remove();
-    this._typeTimer = this.time.addEvent({
-      delay: TIMING.TYPEWRITER_DELAY * 0.8,
-      callback: this._typeChar,
-      callbackScope: this,
-      loop: true,
-    });
-  }
-
-  _typeChar() {
-    if (this._charIndex >= INTRO_TEXT.length) {
+  _startNextParagraph() {
+    if (this._paragraphIndex >= INTRO_PARAGRAPHS.length) {
       this._finishIntro();
       return;
     }
-    this._charIndex++;
-    this._currentLineText.setText(INTRO_TEXT.slice(0, this._charIndex));
+
+    this._charIndex = 0;
+    const nextPara = INTRO_PARAGRAPHS[this._paragraphIndex];
+
+    if (this._displayedText.length > 0) {
+      this._displayedText += "\n\n";
+    }
+
+    this._typeTimer = this.time.addEvent({
+      delay: TIMING.TYPEWRITER_DELAY * 0.7,
+      callback: () => {
+        if (this._charIndex < nextPara.length) {
+          this._displayedText += nextPara[this._charIndex];
+          this._textObject.setText(this._displayedText);
+          this._charIndex++;
+        } else {
+          this._typeTimer.remove();
+          this._paragraphIndex++;
+          this.time.delayedCall(300, () => this._startNextParagraph());
+        }
+      },
+      loop: true,
+    });
   }
 
   _handleSkip() {
     if (!this._skipCooldown) return;
     if (!this._done) {
       if (this._typeTimer) this._typeTimer.remove();
-      this._currentLineText.setText(INTRO_TEXT);
+      this._displayedText = INTRO_PARAGRAPHS.join("\n\n");
+      this._textObject.setText(this._displayedText);
       this._done = true;
       this.time.delayedCall(TIMING.COOLDOWN_AFTER_RESULT, () => {
         this.input.keyboard?.once("keydown", this._goToMenu, this);
@@ -114,7 +129,7 @@ export class IntroScene extends Phaser.Scene {
 
     const W = this.scale.width;
     const H = this.scale.height;
-    const cont = this.add.text(W / 2, H - 48, "— PULSA PARA CONTINUAR —", {
+    const cont = this.add.text(W / 2, H - 44, "— PULSA PARA CONTINUAR —", {
       fontFamily: FONTS.PRIMARY,
       fontSize: FONT_SIZES.BODY,
       color: "#d4a017",
