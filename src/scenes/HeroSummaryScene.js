@@ -155,26 +155,15 @@ export class HeroSummaryScene extends Phaser.Scene {
     this._container.add(verdictText);
 
     // ── BOTÓN PRINCIPAL DE ENTRADA A LA MAZMORRA ────────────────────────────
-    const playBtn = new PixelButton(this, cx, H - 150, "¡ENTRAR EN LA MAZMORRA ►!", () => {
+    const playBtn = new PixelButton(this, cx, H - 110, "¡ENTRAR EN LA MAZMORRA ►!", () => {
       if (!this._dialog.isVisible()) {
         this._enterDungeon();
       }
-    }, { width: 580, height: 90, fontSize: "22px" });
+    }, { width: 580, height: 96, fontSize: "22px" });
 
     this._container.add(playBtn._bg);
     this._container.add(playBtn._label);
     this._container.add(playBtn._cursor);
-
-    // Botón Cambiar Clase
-    const changeClassBtn = new PixelButton(this, cx, H - 55, "< CAMBIAR CLASE", () => {
-      if (!this._dialog.isVisible()) {
-        this.scene.start(SCENES.CLASS_SELECTION);
-      }
-    }, { width: 360, height: 56, fontSize: "15px" });
-
-    this._container.add(changeClassBtn._bg);
-    this._container.add(changeClassBtn._label);
-    this._container.add(changeClassBtn._cursor);
   }
 
   _getHeroClassData(classId) {
