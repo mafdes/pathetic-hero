@@ -1,6 +1,6 @@
 /**
  * AgilityScene.js — Prueba de Agilidad del Gremio (720×1280 HD Vertical)
- * QTE reflex dodge con avance de diálogo modal garantizado.
+ * MECÁNICA ORIGINAL: Esquiva de barriles en 3 carriles con drifting y sabotajes.
  */
 
 import * as Phaser from "phaser";
@@ -8,20 +8,22 @@ import {
   COLORS, FONTS, SCENES, TIMING, DEPTHS, CHALLENGES,
 } from "../../utils/constants.js";
 import { DialogBox } from "../../ui/DialogBox.js";
+import { getVerdict } from "../../utils/helpers.js";
 
-const PROMPTS = [
-  { key: "SPACE", label: "[ ESPACIO ]" },
-  { key: "UP",    label: "[ 🠉 ARRIBA ]" },
-  { key: "DOWN",  label: "[ 🠋 ABAJO ]" },
-  { key: "LEFT",  label: "[ 🠈 IZQUIERDA ]" },
-  { key: "RIGHT", label: "[ 🠊 DERECHA ]" },
-];
+const TOTAL_ROUNDS = 20;
+
+const SABOTAGE_ANNOUNCEMENTS = {
+  2:  "Nivel 2. ¡Múltiples barriles!\nLos aprendices borrachos empujan varios toneles seguidos.",
+  5:  "Nivel 5. ¡Barriles con Drifting!\nLos toneles cambian de carril mientras caen por la rampa.",
+  8:  "Nivel 8. Avalancha del almacén norte.\nVelocidad aumentada y desvíos impredecibles.",
+  12: "Nivel 12. Caos en la bodega del Gremio.\nTodos los barriles mienten sobre su destino.",
+};
 
 const FAIL_COMMENTS = [
-  "Tus reflejos caducaron en el siglo pasado.",
-  "Tropezaste con tu propia sombra.",
-  "La trampa ni se esforzó. Te tiraste encima.",
-  "Reacción de estatua de mármol.",
+  "Aplastado por el primer barril. El almacén no te dio ni un segundo.",
+  "Agilidad de saco de papas. Los barriles ganaron con facilidad.",
+  "Reflejos pesados. Calificas para guardia de puerta, pero sentado.",
+  "El roble te ha dejado una marca imborrable en las costillas.",
 ];
 
 export class AgilityScene extends Phaser.Scene {
@@ -33,11 +35,13 @@ export class AgilityScene extends Phaser.Scene {
     this._challenge     = data?.challenge ?? CHALLENGES.AGILITY;
     this._sheetData     = data?.sheet ?? null;
     this._currentLevel  = 1;
-    this._maxLevels     = 20;
+    this._maxLevels     = TOTAL_ROUNDS;
     this._alive         = true;
     this._inCountdown   = true;
     this._score         = 0;
-    this._currentPrompt = null;
+
+    this._playerLane    = 1; // 0: Izquierda, 1: Centro, 2: Derecha
+    this._barrels       = [];
   }
 
   create() {
@@ -47,15 +51,27 @@ export class AgilityScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(0x191409);
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
-    // Fondo Sala de Trampas
+    // Fondo Almacén de Barriles
     const gfx = this.add.graphics().setDepth(DEPTHS.BG);
     gfx.fillStyle(0x120e05, 1);
     gfx.fillRect(0, 0, W, H);
-    gfx.fillStyle(0x36270b, 1);
-    gfx.fillRect(0, 0, 30, H);
-    gfx.fillRect(W - 30, 0, 30, H);
 
-    // HUD
+    // 3 Carriles (Lanes)
+    const laneWidth = (W - 80) / 3;
+    this._laneCenters = [
+      40 + laneWidth * 0.5,
+      40 + laneWidth * 1.5,
+      40 + laneWidth * 2.5,
+    ];
+
+    // Dibujar líneas de carriles
+    gfx.lineStyle(2, 0x36270b, 0.8);
+    for (let i = 0; i <= 3; i++) {
+      const x = 40 + i * laneWidth;
+      gfx.lineBetween(x, 140, x, H - 120);
+    }
+
+    // HUD superior
     this.add.rectangle(W / 2, 55, W - 60, 80, COLORS.UI_PANEL, 0.95)
       .setStrokeStyle(3, 0xd4a017).setDepth(DEPTHS.UI_BG);
 
@@ -67,23 +83,29 @@ export class AgilityScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#f0e6d3", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    this.add.text(W / 2, 175, "REACCIONA ANTES QUE EXPIRE EL TIEMPO\nPulsa la tecla indicada en pantalla", {
-      fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#d4a017", resolution: 2, align: "center", lineSpacing: 8,
+    this.add.text(W / 2, 160, "ESQUIVA LOS BARRILES CAMBIANDO DE CARRIL\nToca o usa las flechas [ Izquierda / Derecha ]", {
+      fontFamily: FONTS.PRIMARY, fontSize: "15px", color: "#d4a017", resolution: 2, align: "center", lineSpacing: 8,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // Display QTE Prompter gigante
-    this._promptBox = this.add.rectangle(W / 2, H / 2 - 30, 520, 220, COLORS.UI_PANEL, 0.98)
-      .setStrokeStyle(4, COLORS.GOLD).setDepth(DEPTHS.UI);
+    // Jugador (Héroe en la parte inferior)
+    this._playerY = H - 180;
+    this._player = this.add.rectangle(this._laneCenters[1], this._playerY, 70, 70, 0x4caf77, 1)
+      .setStrokeStyle(3, 0xffffff).setDepth(DEPTHS.UI + 2);
 
-    this._promptText = this.add.text(W / 2, H / 2 - 30, "", {
-      fontFamily: FONTS.PRIMARY, fontSize: "36px", color: "#ffffff", resolution: 2,
-    }).setOrigin(0.5).setDepth(DEPTHS.UI + 1);
+    this.add.text(this._laneCenters[1], this._playerY, "🏃", { fontSize: "36px" })
+      .setOrigin(0.5).setDepth(DEPTHS.UI + 3).setName("playerIcon");
 
-    // Barra de tiempo restante
-    this._timerBar = this.add.rectangle(W / 2, H / 2 + 110, 520, 24, 0x4caf77, 1)
-      .setDepth(DEPTHS.UI + 1);
+    // Hint control adaptativo
+    const inputMode = this.registry.get("inputMode") ?? "keyboard";
+    let hintText = "[ 🠈 / 🠊 FLECHAS ]";
+    if (inputMode === "mouse") hintText = "[ CLICK EN CARRIL ]";
+    else if (inputMode === "touch") hintText = "[ TOCA EL CARRIL ]";
 
-    // Telón y Cuenta Atrás desde frame 1
+    this.add.text(W / 2, H - 70, hintText, {
+      fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#5a5a8a", resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI);
+
+    // Telón Oscuro desde frame 1
     this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x191409, 0.98)
       .setDepth(250).setVisible(true);
 
@@ -93,15 +115,62 @@ export class AgilityScene extends Phaser.Scene {
 
     this._dialog = new DialogBox(this);
 
-    // Escuchar Teclado y Click con avance garantizado de diálogo
-    this.input.keyboard?.on("keydown", (evt) => this._onKeyPress(evt.code));
-    this.input.on("pointerdown", () => this._onPointerTap());
+    // Controles de entrada (Teclado y Click/Touch por carriles)
+    this.input.keyboard?.on("keydown-LEFT",  () => this._movePlayer(-1));
+    this.input.keyboard?.on("keydown-RIGHT", () => this._movePlayer(1));
+    this.input.keyboard?.on("keydown-A",     () => this._movePlayer(-1));
+    this.input.keyboard?.on("keydown-D",     () => this._movePlayer(1));
+    this.input.keyboard?.on("keydown-SPACE", () => this._handleModalAdvance());
+
+    this.input.on("pointerdown", (pointer) => {
+      if (this._dialog.isVisible()) {
+        this._dialog.advance();
+        return;
+      }
+      if (pointer.x < W / 3) this._movePlayerToLane(0);
+      else if (pointer.x > (W * 2) / 3) this._movePlayerToLane(2);
+      else this._movePlayerToLane(1);
+    });
 
     this.time.delayedCall(300, () => this._beginLevel());
   }
 
+  _handleModalAdvance() {
+    if (this._dialog.isVisible()) {
+      this._dialog.advance();
+    }
+  }
+
+  _movePlayer(dir) {
+    if (this._dialog.isVisible()) {
+      this._dialog.advance();
+      return;
+    }
+    if (!this._alive || this._inCountdown) return;
+    this._movePlayerToLane(Phaser.Math.Clamp(this._playerLane + dir, 0, 2));
+  }
+
+  _movePlayerToLane(lane) {
+    this._playerLane = lane;
+    const targetX = this._laneCenters[lane];
+    this._player.setX(targetX);
+    const icon = this.children.getByName("playerIcon");
+    if (icon) icon.setX(targetX);
+  }
+
   _beginLevel() {
+    const announcement = SABOTAGE_ANNOUNCEMENTS[this._currentLevel];
+    if (announcement) {
+      this._coverPanel.setVisible(true);
+      this._dialog.show(announcement, () => this._prepareLevel(), "Examinador Rotval");
+    } else {
+      this._prepareLevel();
+    }
+  }
+
+  _prepareLevel() {
     if (!this._alive) return;
+    this._clearBarrels();
     this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
     this._inCountdown = true;
     this._coverPanel.setVisible(true);
@@ -109,7 +178,7 @@ export class AgilityScene extends Phaser.Scene {
     this._runCountdown(() => {
       this._coverPanel.setVisible(false);
       this._inCountdown = false;
-      this._spawnPrompt();
+      this._spawnBarrelWave();
     });
   }
 
@@ -123,88 +192,154 @@ export class AgilityScene extends Phaser.Scene {
         if (onComplete) onComplete();
         return;
       }
-      this._countdownText.setText(steps[i]).setVisible(true);
-      i++;
-      this.time.delayedCall(300, next);
+      const text = steps[i];
+      const isYa = text === "¡YA!";
+      this._countdownText.setText(text)
+        .setColor(isYa ? "#4caf77" : "#f0c040")
+        .setScale(1.3)
+        .setVisible(true);
+
+      this.tweens.add({
+        targets: this._countdownText,
+        scale: 1.0,
+        duration: isYa ? 200 : 350,
+        ease: "Quad.easeOut",
+        onComplete: () => {
+          i++;
+          this.time.delayedCall(isYa ? 150 : 300, next);
+        },
+      });
     };
     next();
   }
 
-  _spawnPrompt() {
-    this._currentPrompt = Phaser.Math.RND.pick(PROMPTS);
-    this._promptText.setText(this._currentPrompt.label);
-    this._maxTime = Math.max(0.6, 2.2 - (this._currentLevel - 1) * 0.08);
-    this._timeLeft = this._maxTime;
+  _spawnBarrelWave() {
+    if (!this._alive) return;
+    const level = this._currentLevel;
+
+    // Configuración de oleada de barriles según nivel
+    const count = level === 1 ? 1 : level === 2 ? 2 : 3;
+    const stagger = Math.max(150, 450 - level * 15);
+    const dropDuration = Math.max(700, 1500 - level * 35);
+    const hasDrift = level >= 5;
+
+    const lanes = [0, 1, 2].sort(() => Math.random() - 0.5);
+
+    for (let i = 0; i < count; i++) {
+      const startLane = lanes[i % 3];
+      let endLane = startLane;
+
+      if (hasDrift && Math.random() < 0.6) {
+        const candidates = [0, 1, 2].filter(l => l !== startLane);
+        endLane = Phaser.Math.RND.pick(candidates);
+      }
+
+      this.time.delayedCall(i * stagger, () => {
+        if (!this._alive || this._inCountdown) return;
+        this._createBarrel(startLane, endLane, dropDuration);
+      });
+    }
   }
 
-  _onKeyPress(code) {
-    if (this._dialog.isVisible()) {
-      this._dialog.advance();
-      return;
-    }
-    if (!this._alive || this._inCountdown || !this._currentPrompt) return;
+  _createBarrel(startLane, endLane, duration) {
+    const W = this.scale.width;
+    const startX = this._laneCenters[startLane];
+    const endX   = this._laneCenters[endLane];
+    const startY = 190;
+    const endY   = this.scale.height - 80;
 
-    const expectedKey = `Key${this._currentPrompt.key}`;
-    const expectedArrow = `Arrow${this._currentPrompt.key}`;
-    const isSpace = this._currentPrompt.key === "SPACE" && code === "Space";
+    const barrel = this.add.rectangle(startX, startY, 64, 64, 0x884411, 1)
+      .setStrokeStyle(3, 0xd4a017).setDepth(DEPTHS.UI + 1);
 
-    if (code === expectedKey || code === expectedArrow || isSpace) {
+    const icon = this.add.text(startX, startY, "🛢️", { fontSize: "36px" })
+      .setOrigin(0.5).setDepth(DEPTHS.UI + 2);
+
+    const barrelObj = { rect: barrel, icon, startLane, endLane, done: false };
+    this._barrels.push(barrelObj);
+
+    this.tweens.add({
+      targets: [barrel, icon],
+      x: endX,
+      y: endY,
+      duration,
+      ease: endLane !== startLane ? "Quad.easeIn" : "Linear",
+      onUpdate: () => {
+        if (!this._alive || barrelObj.done) return;
+        // Detección de colisión con el jugador (en la zona inferior Y)
+        if (barrel.y >= this._playerY - 40 && barrel.y <= this._playerY + 40) {
+          const currentLane = barrel.x < W / 3 ? 0 : barrel.x < (W * 2) / 3 ? 1 : 2;
+          if (currentLane === this._playerLane) {
+            barrelObj.done = true;
+            this._failLevel();
+          }
+        }
+      },
+      onComplete: () => {
+        barrelObj.done = true;
+        barrel.destroy();
+        icon.destroy();
+        this._checkWaveComplete();
+      },
+    });
+  }
+
+  _checkWaveComplete() {
+    if (!this._alive || this._inCountdown) return;
+    const remaining = this._barrels.filter(b => !b.done);
+    if (remaining.length === 0) {
       this._passLevel();
-    } else {
-      this._failLevel();
     }
   }
 
-  _onPointerTap() {
-    if (this._dialog.isVisible()) {
-      this._dialog.advance();
-      return;
-    }
-    if (!this._alive || this._inCountdown || !this._currentPrompt) return;
-    this._passLevel();
-  }
-
-  update(time, delta) {
-    if (!this._alive || this._inCountdown || this._dialog.isVisible()) return;
-
-    const dt = delta / 1000;
-    this._timeLeft -= dt;
-
-    const ratio = Math.max(0, this._timeLeft / this._maxTime);
-    this._timerBar.setSize(520 * ratio, 24);
-
-    if (this._timeLeft <= 0) {
-      this._failLevel();
-    }
+  _clearBarrels() {
+    this._barrels.forEach(b => {
+      if (b.rect) b.rect.destroy();
+      if (b.icon) b.icon.destroy();
+    });
+    this._barrels = [];
   }
 
   _passLevel() {
     if (this._inCountdown || !this._alive) return;
     this._inCountdown = true;
     this._score = this._currentLevel;
+
     if (this._currentLevel >= this._maxLevels) {
       this._endGame(true);
       return;
     }
+
     this._currentLevel++;
     this.cameras.main.flash(150, 240, 192, 64, true);
-    this.time.delayedCall(250, () => this._beginLevel());
+    this.time.delayedCall(300, () => this._beginLevel());
   }
 
   _failLevel() {
     this._alive = false;
+    this._clearBarrels();
     this._coverPanel.setVisible(true);
+    this.cameras.main.shake(300, 0.015);
     const comment = Phaser.Math.RND.pick(FAIL_COMMENTS);
-    this._dialog.show(`FIN DE LA PRUEBA\n\n${comment}\n\nPuntuación: ${this._score} / 20`, () => {
-      this.scene.start(SCENES.GUILD_REPORT, { challenge: this._challenge, score: this._score, sheet: this._sheetData });
+
+    this._dialog.show(`FIN DE LA PRUEBA\n\n${comment}\n\nPuntuación: ${this._score} / 20\n\n${getVerdict(this._score)}`, () => {
+      this._returnToReport(this._score);
     }, "Examinador Rotval");
   }
 
   _endGame(perfect = false) {
     this._alive = false;
+    this._clearBarrels();
     this._coverPanel.setVisible(true);
-    this._dialog.show(`¡AGILIDAD FELINA!\n\nPuntuación: ${this._score} / 20`, () => {
-      this.scene.start(SCENES.GUILD_REPORT, { challenge: this._challenge, score: this._score, sheet: this._sheetData });
+    const finalScore = this._score;
+    this._dialog.show(`¡AGILIDAD FELINA SUPERADA!\n\nPuntuación: ${finalScore} / 20\n\n${getVerdict(finalScore)}`, () => {
+      this._returnToReport(finalScore);
     }, "Examinador Rotval");
+  }
+
+  _returnToReport(score) {
+    this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
+    this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
+      this.scene.start(SCENES.GUILD_REPORT, { challenge: this._challenge, score, sheet: this._sheetData });
+    });
   }
 }
