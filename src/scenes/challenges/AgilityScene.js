@@ -84,8 +84,8 @@ export class AgilityScene extends Phaser.Scene {
       .setDepth(DEPTHS.UI + 1);
 
     // Telón y Cuenta Atrás
-    this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x191409, 0.95)
-      .setDepth(250).setVisible(false);
+    this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x191409, 0.98)
+      .setDepth(250).setVisible(true);
 
     this._countdownText = this.add.text(W / 2, H / 2, "", {
       fontFamily: FONTS.PRIMARY, fontSize: "120px", color: "#f0c040", resolution: 2,

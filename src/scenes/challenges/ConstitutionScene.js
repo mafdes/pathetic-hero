@@ -1,6 +1,6 @@
 /**
  * ConstitutionScene.js — Prueba de Constitución del Gremio (720×1280 HD Vertical)
- * Cámara de Ensayos Tóxicos con sabotajes del examinador y cuenta atrás con telón.
+ * Cámara de Ensayos Tóxicos con calibración precisa, telón inicial inmediato y barra de tiempo.
  */
 
 import * as Phaser from "phaser";
@@ -16,6 +16,12 @@ const FAIL_COMMENTS = [
   "Desmayado en 3 segundos. Récord del Gremio.",
   "Un moco tiene más resistencia biológica.",
   "Estómago de mantequilla. El Tribunal anota: rechazado.",
+];
+
+const OVERDOSE_COMMENTS = [
+  "¡SOBREDOSIS! Exceso de presión pulmonar.",
+  "¡Explosión arterial! Te pasaste machacando por arriba.",
+  "Hiperventilación crítica. Tu cuerpo no soportó el exceso.",
 ];
 
 const SUCCESS_COMMENTS = [
@@ -46,8 +52,9 @@ export class ConstitutionScene extends Phaser.Scene {
     this._inCountdown   = true;
     this._score         = 0;
     this._gaugeVal      = 50; // 0 a 100
+    this._holdTime      = 0;  // 0 a 1.8 segundos
+    this._requiredHold  = 1.8;
     this._zoneT         = 0;
-    this._jitterTimer   = null;
   }
 
   create() {
@@ -57,7 +64,7 @@ export class ConstitutionScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(0x0a1a0f);
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
-    // Fondo Sala de Alquimia / Resistencia
+    // Fondo Sala de Alquimia
     const gfx = this.add.graphics().setDepth(DEPTHS.BG);
     gfx.fillStyle(0x051409, 1);
     gfx.fillRect(0, 0, W, H);
@@ -65,7 +72,7 @@ export class ConstitutionScene extends Phaser.Scene {
     gfx.fillRect(0, 0, 30, H);
     gfx.fillRect(W - 30, 0, 30, H);
 
-    // HUD
+    // HUD superior
     this.add.rectangle(W / 2, 55, W - 60, 80, COLORS.UI_PANEL, 0.95)
       .setStrokeStyle(3, 0x2d6a4f).setDepth(DEPTHS.UI_BG);
 
@@ -77,13 +84,13 @@ export class ConstitutionScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#f0e6d3", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    this.add.text(W / 2, 175, "PULSA para mantener el nivel dentro\nde la zona segura de salud", {
+    this.add.text(W / 2, 160, "MANTÉN la aguja en la ZONA VERDE\n¡No te pases por arriba ni por abajo!", {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#8abf9e", resolution: 2, align: "center", lineSpacing: 8,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // Medidor Vertical de Resistencia
-    const mX = W / 2;
-    const mY = H / 2 - 20;
+    // Medidor Vertical
+    const mX = W / 2 - 40;
+    const mY = H / 2 - 10;
     const mW = 76;
     const mH = 440;
 
@@ -97,13 +104,40 @@ export class ConstitutionScene extends Phaser.Scene {
     this._gaugeBg = this.add.rectangle(mX, mY, mW, mH, 0x112215, 1)
       .setDepth(DEPTHS.UI_BG + 1);
 
+    // Límites de Sobredosis y Colapso
+    this.add.text(mX + mW / 2 + 15, mY - mH / 2 + 10, "◄ SOBREDOSIS", {
+      fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#ff4444", resolution: 2,
+    }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
+
+    this.add.text(mX + mW / 2 + 15, mY + mH / 2 - 10, "◄ COLAPSO", {
+      fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#ff4444", resolution: 2,
+    }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
+
     // Zona Segura
     this._targetZone = this.add.rectangle(mX, mY, mW - 8, 120, 0x2d6a4f, 0.7)
       .setDepth(DEPTHS.UI);
 
-    // Aguja / Nivel de Toxina
+    // Aguja
     this._needle = this.add.rectangle(mX, mY, mW - 4, 18, 0x4caf77, 1)
       .setDepth(DEPTHS.UI + 1);
+
+    // ── Barra de Progreso del Tiempo en Zona (Derecha) ──────────────────────
+    const pX = W / 2 + 180;
+    const pY = mY;
+    const pW = 36;
+    const pH = 380;
+
+    this.add.rectangle(pX, pY, pW + 10, pH + 10, COLORS.BG_DARK, 1)
+      .setStrokeStyle(3, 0x2d6a4f).setDepth(DEPTHS.UI_BG);
+
+    this.add.rectangle(pX, pY, pW, pH, 0x09170c, 1).setDepth(DEPTHS.UI_BG + 1);
+
+    this._progressFill = this.add.rectangle(pX, pY + pH / 2, pW - 4, 0, 0x4caf77, 1)
+      .setOrigin(0.5, 1).setDepth(DEPTHS.UI);
+
+    this._progressText = this.add.text(pX, pY - pH / 2 - 24, "ESTABILIDAD", {
+      fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#4caf77", resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
     // Hint Control
     const inputMode = this.registry.get("inputMode") ?? "keyboard";
@@ -115,27 +149,29 @@ export class ConstitutionScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#5a5a8a", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
-    // Telón Oscuro con Opacidad para Cuenta Atrás y Diálogos
-    this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x0a1a0f, 0.95)
-      .setDepth(250).setVisible(false);
+    // ── TELÓN OSCURO DESDE EL PRIMER FRAME DE CARGA ─────────────────────────
+    this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x0a1a0f, 0.98)
+      .setDepth(250)
+      .setVisible(true); // ¡VISIBLE DESDE EL INICIO!
 
-    // Cuenta atrás gigante (120px) en el centro
+    // Cuenta atrás gigante
     this._countdownText = this.add.text(W / 2, H / 2, "", {
       fontFamily: FONTS.PRIMARY, fontSize: "120px", color: "#4caf77", resolution: 2,
     }).setOrigin(0.5).setDepth(251).setVisible(false);
 
-    // Diálogo Modal del Examinador
+    // Diálogo Modal
     this._dialog = new DialogBox(this);
 
     this.input.keyboard?.on("keydown-SPACE", () => this._onTap());
     this.input.on("pointerdown", () => this._onTap());
 
-    this.time.delayedCall(400, () => this._beginLevel());
+    this.time.delayedCall(300, () => this._beginLevel());
   }
 
   _beginLevel() {
     const announcement = SABOTAGE_ANNOUNCEMENTS[this._currentLevel];
     if (announcement) {
+      this._coverPanel.setVisible(true);
       this._dialog.show(announcement, () => this._prepareLevel(), "Examinador Rotval");
     } else {
       this._prepareLevel();
@@ -145,10 +181,13 @@ export class ConstitutionScene extends Phaser.Scene {
   _prepareLevel() {
     if (!this._alive) return;
     this._gaugeVal = 50;
-    this._zoneT = 0;
+    this._holdTime = 0;
+    this._zoneT    = 0;
     this._targetZone.setY(this._mY);
     this._levelText.setText(`NIVEL  ${this._currentLevel} / 20`);
     this._inCountdown = true;
+
+    // Asegurar que el telón está TAPANDO la pantalla antes del 3...2...1
     this._coverPanel.setVisible(true);
 
     this._runCountdown(() => {
@@ -156,7 +195,6 @@ export class ConstitutionScene extends Phaser.Scene {
       this._inCountdown = false;
       this._holdTime = 0;
 
-      // Calambre muscular tremolo a partir de Nivel 5
       if (this._currentLevel >= 5) {
         this._triggerTremor();
       }
@@ -188,7 +226,7 @@ export class ConstitutionScene extends Phaser.Scene {
         ease: "Quad.easeOut",
         onComplete: () => {
           i++;
-          this.time.delayedCall(isYa ? 150 : 350, next);
+          this.time.delayedCall(isYa ? 150 : 300, next);
         },
       });
     };
@@ -197,14 +235,13 @@ export class ConstitutionScene extends Phaser.Scene {
 
   _triggerTremor() {
     if (!this._alive || this._inCountdown) return;
-    // Temblor involuntario
     this.cameras.main.shake(300, 0.008);
-    this._gaugeVal = Phaser.Math.Clamp(this._gaugeVal + Phaser.Math.Between(-15, 15), 10, 90);
+    this._gaugeVal = Phaser.Math.Clamp(this._gaugeVal + Phaser.Math.Between(-14, 14), 15, 85);
   }
 
   _onTap() {
     if (!this._alive || this._inCountdown || this._dialog.isVisible()) return;
-    this._gaugeVal = Math.min(100, this._gaugeVal + 16);
+    this._gaugeVal = Math.min(100, this._gaugeVal + 14);
   }
 
   update(time, delta) {
@@ -213,9 +250,22 @@ export class ConstitutionScene extends Phaser.Scene {
     const dt = delta / 1000;
     const level = this._currentLevel;
 
-    // Empuje constante de la toxina
-    const decaySpeed = 22 + level * 2.5;
-    this._gaugeVal = Math.max(0, this._gaugeVal - decaySpeed * dt);
+    // Empuje hacia abajo
+    const decaySpeed = 20 + level * 2.2;
+    this._gaugeVal -= decaySpeed * dt;
+
+    // ── CALIBRACIÓN DE LÍMITES ──────────────────────────────────────────────
+    // Si te pasas por ARRIBA (>= 96) -> SOBREDOSIS Y FALTA
+    if (this._gaugeVal >= 96) {
+      this._failLevel("overdose");
+      return;
+    }
+
+    // Si te pasas por ABAJO (<= 4) -> COLAPSO Y FALTA
+    if (this._gaugeVal <= 4) {
+      this._failLevel("collapse");
+      return;
+    }
 
     const mH = this._mH;
     const minY = this._mY - mH / 2 + 10;
@@ -224,27 +274,31 @@ export class ConstitutionScene extends Phaser.Scene {
 
     this._needle.setY(nY);
 
-    // Sabotaje: Movimiento oscilante de la zona segura a partir de Nivel 7
+    // Oscilación de la zona segura a partir de Nivel 7
     if (level >= 7) {
       this._zoneT += dt;
-      const offset = Math.sin(this._zoneT * (1.5 + level * 0.2)) * (40 + level * 5);
+      const offset = Math.sin(this._zoneT * (1.2 + level * 0.15)) * (30 + level * 4);
       this._targetZone.setY(this._mY + offset);
     }
 
-    // Comprobar si la aguja está en zona segura
+    // Comprobar zona verde
     const tzTop = this._targetZone.y - this._targetZone.height / 2;
     const tzBot = this._targetZone.y + this._targetZone.height / 2;
 
     if (nY >= tzTop && nY <= tzBot) {
-      this._holdTime = (this._holdTime || 0) + dt;
-      if (this._holdTime >= 1.8) {
+      this._holdTime += dt;
+      if (this._holdTime >= this._requiredHold) {
         this._passLevel();
       }
     } else {
-      if (this._gaugeVal <= 2 || this._gaugeVal >= 98) {
-        this._failLevel();
-      }
+      // Si te sales de la zona verde, el progreso retrocede rápidamente
+      this._holdTime = Math.max(0, this._holdTime - dt * 2.5);
     }
+
+    // Actualizar barra de progreso vertical de estabilidad
+    const ratio = Math.min(1.0, Math.max(0, this._holdTime / this._requiredHold));
+    const fillH = ratio * 380;
+    this._progressFill.setSize(32, fillH);
   }
 
   _passLevel() {
@@ -258,10 +312,15 @@ export class ConstitutionScene extends Phaser.Scene {
     this._beginLevel();
   }
 
-  _failLevel() {
+  _failLevel(reason = "collapse") {
     this._alive = false;
     this._coverPanel.setVisible(true);
-    const comment = Phaser.Math.RND.pick(FAIL_COMMENTS);
+
+    let comment = Phaser.Math.RND.pick(FAIL_COMMENTS);
+    if (reason === "overdose") {
+      comment = Phaser.Math.RND.pick(OVERDOSE_COMMENTS);
+    }
+
     this._dialog.show(`FIN DE LA PRUEBA\n\n${comment}\n\nPuntuación: ${this._score} / 20\n\n${getVerdict(this._score)}`, () => {
       this.scene.start(SCENES.GUILD_REPORT, { challenge: this._challenge, score: this._score, sheet: this._sheetData });
     }, "Examinador Rotval");

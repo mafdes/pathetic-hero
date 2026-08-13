@@ -159,7 +159,7 @@ export class DexterityScene extends Phaser.Scene {
     // Telón oscuro CASI NEGRO para tapar la prueba en la cuenta atrás
     this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x0d0613, 0.98)
       .setDepth(250)
-      .setVisible(false);
+      .setVisible(true);
 
     this._countdownText = this.add.text(W / 2, H / 2, "", {
       fontFamily: FONTS.PRIMARY,
