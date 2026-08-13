@@ -38,21 +38,21 @@ export class IntroScene extends Phaser.Scene {
         .setDisplaySize(W, H).setAlpha(0.35).setDepth(DEPTHS.BG);
     }
 
-    // Texto narrativo vertical centrado en pantalla (720px ancho, wordWrap: 620px)
+    // Texto narrativo vertical centrado en pantalla
     this._textObject = this.add.text(W / 2, H / 2 - 50, "", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "22px",
+      fontSize: "32px",
       color: "#f0e6d3",
       resolution: 2,
       align: "center",
-      wordWrap: { width: 620 },
-      lineSpacing: 14,
+      wordWrap: { width: 660 },
+      lineSpacing: 24,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
 
     // Hint "SKIP"
     this._skipHint = this.add.text(W / 2, H - 60, "[ CUALQUIER TECLA — SKIP ]", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "14px",
+      fontSize: "24px",
       color: "#6a4e8a",
       resolution: 2,
     }).setOrigin(0.5, 0.5).setDepth(DEPTHS.UI);
@@ -129,7 +129,7 @@ export class IntroScene extends Phaser.Scene {
 
     const cont = this.add.text(W / 2, H - 80, "— PULSA PARA CONTINUAR —", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "18px",
+      fontSize: "28px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);

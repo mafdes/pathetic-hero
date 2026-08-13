@@ -34,14 +34,14 @@ export class MainMenuScene extends Phaser.Scene {
     // ── Cabecera Vertical HD ──────────────────────────────────────────────────
     this.add.text(W / 2, 180, "PATHETIC", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "52px",
+      fontSize: "80px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
     this.add.text(W / 2, 270, "HERO", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "44px",
+      fontSize: "64px",
       color: "#f0e6d3",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
@@ -50,7 +50,7 @@ export class MainMenuScene extends Phaser.Scene {
 
     const subtitle = this.add.text(W / 2, 370, "~ Un RPG para valientes mediocres ~", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "16px",
+      fontSize: "24px",
       color: "#6a4e8a",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
@@ -68,7 +68,7 @@ export class MainMenuScene extends Phaser.Scene {
 
     // ── Botones HD ────────────────────────────────────────────────────────────
     const startY = 600;
-    const gap = 110;
+    const gap = 130;
 
     this._buttons = MENU_ITEMS.map((item, i) => {
       const btn = new PixelButton(
@@ -77,7 +77,7 @@ export class MainMenuScene extends Phaser.Scene {
         startY + i * gap,
         item.label,
         () => this._onSelect(item.id),
-        { width: 500, height: 76, fontSize: "22px" }
+        { width: 600, height: 96, fontSize: "32px" }
       );
       return btn;
     });
@@ -87,7 +87,7 @@ export class MainMenuScene extends Phaser.Scene {
     // ── Versión ───────────────────────────────────────────────────────────────
     this.add.text(W / 2, H - 50, "v0.1.0 — Pathetic Hero", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "14px",
+      fontSize: "20px",
       color: "#3d3d6b",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);

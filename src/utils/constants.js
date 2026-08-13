@@ -53,11 +53,11 @@ export const FONTS = {
 
 // Tamaños de fuente legibles a 720×1280
 export const FONT_SIZES = {
-  TITLE:    "52px",   // Títulos principales
-  HEADING:  "32px",   // Subtítulos de sección
-  BODY:     "22px",   // Texto de juego normal / botones
-  SMALL:    "16px",   // Hints, versión, secundarios
-  TINY:     "12px",   // Etiquetas muy pequeñas
+  TITLE:    "80px",   // Títulos principales
+  HEADING:  "48px",   // Subtítulos de sección
+  BODY:     "32px",   // Texto de juego normal / botones
+  SMALL:    "24px",   // Hints, versión, secundarios
+  TINY:     "16px",   // Etiquetas muy pequeñas
 };
 
 export const DEPTHS = {

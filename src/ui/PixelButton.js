@@ -23,8 +23,8 @@ export class PixelButton {
     this._selected = options.selected ?? false;
     this._enabled = true;
 
-    const w = options.width  ?? 500;
-    const h = options.height ?? 74;
+    const w = options.width  ?? 600;
+    const h = options.height ?? 96;
     const fs = options.fontSize ?? FONT_SIZES.BODY;
 
     // ── Fondo ────────────────────────────────────────────────────────────────
