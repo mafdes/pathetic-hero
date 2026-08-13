@@ -4,6 +4,7 @@
 
 import * as Phaser from "phaser";
 import { COLORS, FONTS, FONT_SIZES, SCENES, TIMING, DEPTHS } from "../utils/constants.js";
+import { SaveManager } from "../systems/SaveManager.js";
 import { PixelButton } from "../ui/PixelButton.js";
 
 const MENU_ITEMS = [
@@ -121,6 +122,7 @@ export class MainMenuScene extends Phaser.Scene {
     this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
       switch (id) {
         case "new":
+          SaveManager.clear();
           this.scene.start(SCENES.CONTROLS, { mode: "new" });
           break;
         case "options":
