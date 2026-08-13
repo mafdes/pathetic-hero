@@ -1,11 +1,8 @@
 /**
- * PixelButton.js — Botón reutilizable con estética pixel art retro
- *
- * Uso:
- *   const btn = new PixelButton(scene, 160, 90, "NUEVA PARTIDA", () => { ... });
+ * PixelButton.js — Botón reutilizable con estética pixel art retro (960×540)
  */
 
-import { COLORS, FONTS, DEPTHS } from "../utils/constants.js";
+import { COLORS, FONTS, FONT_SIZES, DEPTHS } from "../utils/constants.js";
 
 export class PixelButton {
   /**
@@ -15,10 +12,10 @@ export class PixelButton {
    * @param {string} label
    * @param {Function} onClick
    * @param {object} [options]
-   * @param {number} [options.width=100]
-   * @param {number} [options.height=16]
-   * @param {number} [options.fontSize=6]
-   * @param {boolean} [options.selected=false] — Estado seleccionado inicial
+   * @param {number} [options.width=280]
+   * @param {number} [options.height=44]
+   * @param {string} [options.fontSize="16px"]
+   * @param {boolean} [options.selected=false]
    */
   constructor(scene, x, y, label, onClick, options = {}) {
     this.scene = scene;
@@ -26,33 +23,33 @@ export class PixelButton {
     this._selected = options.selected ?? false;
     this._enabled = true;
 
-    const w = options.width ?? 100;
-    const h = options.height ?? 16;
-    const fs = options.fontSize ?? 6;
+    const w = options.width  ?? 280;
+    const h = options.height ?? 44;
+    const fs = options.fontSize ?? FONT_SIZES.BODY;
 
-    // ── Fondo del botón ──────────────────────────────────────────────────────
+    // ── Fondo ────────────────────────────────────────────────────────────────
     this._bg = scene.add
-      .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.9)
+      .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.92)
       .setDepth(DEPTHS.UI)
-      .setStrokeStyle(1, COLORS.GOLD_DARK)
+      .setStrokeStyle(2, COLORS.GOLD_DARK)
       .setInteractive({ useHandCursor: true });
 
-    // ── Texto ────────────────────────────────────────────────────────────────
+    // ── Etiqueta ─────────────────────────────────────────────────────────────
     this._label = scene.add
       .text(x, y, label, {
         fontFamily: FONTS.PRIMARY,
-        fontSize: `${fs}px`,
+        fontSize: fs,
         color: "#f0e6d3",
         resolution: 2,
       })
       .setOrigin(0.5, 0.5)
       .setDepth(DEPTHS.UI);
 
-    // ── Cursor selector (► a la izquierda) ──────────────────────────────────
+    // ── Cursor ► ─────────────────────────────────────────────────────────────
     this._cursor = scene.add
-      .text(x - w / 2 + 4, y, "►", {
+      .text(x - w / 2 + 12, y, "►", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: `${fs}px`,
+        fontSize: fs,
         color: "#d4a017",
         resolution: 2,
       })
@@ -60,56 +57,40 @@ export class PixelButton {
       .setDepth(DEPTHS.UI)
       .setVisible(false);
 
-    // ── Eventos de ratón ─────────────────────────────────────────────────────
+    // ── Eventos ──────────────────────────────────────────────────────────────
     this._bg
       .on("pointerover", () => this.select())
-      .on("pointerout", () => {
-        if (!this._selected) this.deselect();
-      })
-      .on("pointerdown", () => {
-        if (this._enabled) {
-          scene.sound.play("sfx_confirm", { volume: 0.6 }).catch?.(() => {});
-          this.onClick();
-        }
-      });
+      .on("pointerout",  () => { if (!this._selected) this.deselect(); })
+      .on("pointerdown", () => { if (this._enabled) this.onClick(); });
 
     this._updateVisuals();
   }
 
-  select() {
-    this._selected = true;
-    this._updateVisuals();
-  }
-
-  deselect() {
-    this._selected = false;
-    this._updateVisuals();
-  }
+  select()   { this._selected = true;  this._updateVisuals(); }
+  deselect() { this._selected = false; this._updateVisuals(); }
 
   setEnabled(enabled) {
     this._enabled = enabled;
+    this._bg.setInteractive(enabled ? { useHandCursor: true } : false);
     this._updateVisuals();
   }
 
   _updateVisuals() {
-    const color = this._selected && this._enabled ? COLORS.GOLD : COLORS.GOLD_DARK;
-    this._bg.setStrokeStyle(1, color);
+    const active = this._selected && this._enabled;
+    this._bg.setStrokeStyle(2, active ? COLORS.GOLD : COLORS.GOLD_DARK);
     this._label.setColor(
-      this._enabled
-        ? (this._selected ? "#f0c040" : "#f0e6d3")
-        : "#666666"
+      !this._enabled  ? "#555555" :
+      this._selected  ? "#f0c040" : "#f0e6d3"
     );
-    this._cursor.setVisible(this._selected && this._enabled);
+    this._cursor.setVisible(active);
   }
 
-  setLabel(text) {
-    this._label.setText(text);
-  }
+  setLabel(text) { this._label.setText(text); }
 
   setVisible(v) {
     this._bg.setVisible(v);
     this._label.setVisible(v);
-    this._cursor.setVisible(v && this._selected);
+    this._cursor.setVisible(v && this._selected && this._enabled);
     return this;
   }
 

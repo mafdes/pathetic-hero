@@ -4,9 +4,10 @@
  */
 
 // ─── Resolución Base ────────────────────────────────────────────────────────
-// 320×180 es el canvas nativo. Phaser lo escala con FIT para llenar la pantalla.
-export const BASE_WIDTH = 320;
-export const BASE_HEIGHT = 180;
+// 960×540 es el canvas interno. Phaser lo escala con FIT para llenar la pantalla.
+// Los sprites pixel art se dibujan a escala ×3 (diseñados en 320×180 lógicos).
+export const BASE_WIDTH = 960;
+export const BASE_HEIGHT = 540;
 
 // ─── Paleta de Colores ───────────────────────────────────────────────────────
 export const COLORS = {
@@ -57,6 +58,15 @@ export const CSS_COLORS = {
 export const FONTS = {
   PRIMARY: "Press Start 2P",
   FALLBACK: "monospace",
+};
+
+// Tamaños de fuente en píxeles del canvas (960×540)
+export const FONT_SIZES = {
+  TITLE:    "32px",   // Títulos principales
+  HEADING:  "22px",   // Subtítulos de sección
+  BODY:     "16px",   // Texto de juego normal
+  SMALL:    "12px",   // Hints, versión, secundarios
+  TINY:     "10px",   // Etiquetas muy pequeñas
 };
 
 // ─── Profundidades (Z-index Phaser) ─────────────────────────────────────────

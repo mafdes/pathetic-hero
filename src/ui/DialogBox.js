@@ -1,33 +1,19 @@
 /**
  * DialogBox.js — Cuadro de diálogo estilo RPG con efecto typewriter
- *
- * Uso:
- *   const dialog = new DialogBox(scene);
- *   dialog.show("Hola, aventurero...", () => console.log("terminó"));
- *   dialog.advance(); // llamado desde input del jugador
  */
 
-import { COLORS, FONTS, TIMING, DEPTHS } from "../utils/constants.js";
+import { COLORS, FONTS, FONT_SIZES, TIMING, DEPTHS } from "../utils/constants.js";
 
 export class DialogBox {
-  /**
-   * @param {Phaser.Scene} scene
-   * @param {object} [options]
-   * @param {number} [options.x=0]
-   * @param {number} [options.y]  — Por defecto, zona inferior
-   * @param {number} [options.width]
-   * @param {number} [options.height=40]
-   * @param {string} [options.speaker] — Nombre del hablante (opcional)
-   */
   constructor(scene, options = {}) {
     this.scene = scene;
     const W = scene.scale.width;
     const H = scene.scale.height;
 
-    const x = options.x ?? 4;
-    const w = options.width ?? W - 8;
-    const h = options.height ?? 44;
-    const y = options.y ?? H - h - 4;
+    const x = options.x ?? 16;
+    const w = options.width ?? W - 32;
+    const h = options.height ?? 120;
+    const y = options.y ?? H - h - 12;
 
     this._onComplete = null;
     this._typeTimer = null;
@@ -41,14 +27,14 @@ export class DialogBox {
       .rectangle(x, y, w, h, COLORS.UI_PANEL, 0.92)
       .setOrigin(0, 0)
       .setDepth(DEPTHS.DIALOG)
-      .setStrokeStyle(1, COLORS.GOLD)
+      .setStrokeStyle(2, COLORS.GOLD)
       .setVisible(false);
 
     // ── Nombre del hablante ──────────────────────────────────────────────────
     this._speakerText = scene.add
-      .text(x + 6, y - 10, "", {
+      .text(x + 16, y - 22, "", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: "5px",
+        fontSize: FONT_SIZES.SMALL,
         color: "#d4a017",
         resolution: 2,
       })
@@ -57,22 +43,22 @@ export class DialogBox {
 
     // ── Texto principal con typewriter ───────────────────────────────────────
     this._bodyText = scene.add
-      .text(x + 6, y + 6, "", {
+      .text(x + 16, y + 16, "", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: "5px",
+        fontSize: FONT_SIZES.SMALL,
         color: "#f0e6d3",
-        wordWrap: { width: w - 12 },
+        wordWrap: { width: w - 32 },
         resolution: 2,
-        lineSpacing: 4,
+        lineSpacing: 10,
       })
       .setDepth(DEPTHS.DIALOG)
       .setVisible(false);
 
-    // ── Indicador "continuar" (▼ parpadeante) ────────────────────────────────
+    // ── Indicador "continuar" ────────────────────────────────────────────────
     this._continueIndicator = scene.add
-      .text(x + w - 14, y + h - 12, "▼", {
+      .text(x + w - 32, y + h - 28, "▼", {
         fontFamily: FONTS.PRIMARY,
-        fontSize: "5px",
+        fontSize: FONT_SIZES.SMALL,
         color: "#d4a017",
         resolution: 2,
       })
@@ -88,12 +74,6 @@ export class DialogBox {
     });
   }
 
-  /**
-   * Muestra el cuadro de diálogo y empieza el typewriter.
-   * @param {string} text
-   * @param {Function} [onComplete] — Llamado cuando el jugador avanza al final
-   * @param {string} [speaker]
-   */
   show(text, onComplete = null, speaker = "") {
     this._fullText = text;
     this._onComplete = onComplete;
@@ -109,10 +89,6 @@ export class DialogBox {
     this._startTypewriter();
   }
 
-  /**
-   * Avanza el diálogo: si está escribiendo, muestra todo el texto;
-   * si ya terminó, llama al callback de completado.
-   */
   advance() {
     if (!this._visible) return;
     if (this._isTyping) {
@@ -125,7 +101,6 @@ export class DialogBox {
 
   _startTypewriter() {
     if (this._typeTimer) this._typeTimer.remove();
-
     this._typeTimer = this.scene.time.addEvent({
       delay: TIMING.TYPEWRITER_DELAY,
       callback: this._typeNextChar,
@@ -150,10 +125,7 @@ export class DialogBox {
   }
 
   _finishTypewriter() {
-    if (this._typeTimer) {
-      this._typeTimer.remove();
-      this._typeTimer = null;
-    }
+    if (this._typeTimer) { this._typeTimer.remove(); this._typeTimer = null; }
     this._isTyping = false;
     this._continueIndicator.setVisible(true);
   }
@@ -169,7 +141,7 @@ export class DialogBox {
   }
 
   isVisible() { return this._visible; }
-  isTyping() { return this._isTyping; }
+  isTyping()  { return this._isTyping; }
 
   destroy() {
     if (this._typeTimer) this._typeTimer.remove();
