@@ -87,13 +87,14 @@ export class ConstitutionScene extends Phaser.Scene {
   }
 
   init(data) {
+    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(19, Math.max(0, data.startLevel)) : 0;
     this._challenge     = data?.challenge ?? CHALLENGES.CONSTITUTION;
     this._sheetData     = data?.sheet ?? null;
-    this._currentLevel  = 1;
+    this._currentLevel  = startLvl + 1;
     this._maxLevels     = TOTAL_ROUNDS;
     this._alive         = true;
     this._inCountdown   = true;
-    this._score         = 0;
+    this._score         = startLvl;
 
     this._health        = 0.5;
     this._zoneCenter    = 0.5;

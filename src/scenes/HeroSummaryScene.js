@@ -187,12 +187,6 @@ export class HeroSummaryScene extends Phaser.Scene {
 
   _enterDungeon() {
     SaveManager.save(this.sheet);
-    const clsName = this._getHeroClassData(this.sheet.heroClass).name;
-
-    this._dialog.show(
-      `¡PRÓXIMAMENTE!\n\nFASE 2D RPG (v0.3)\n\nEl Tribunal del Gremio está limpiando las trágicas trampas de la mazmorra.\n\n¡Tu héroe "${this.sheet.name}" (${clsName}) aguarda victorioso en la antesala!`,
-      null,
-      "Examinador Rotval"
-    );
+    this.scene.start(SCENES.MAP);
   }
 }

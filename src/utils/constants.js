@@ -86,7 +86,8 @@ export const CHALLENGES = {
   CONSTITUTION: "constitution",
   STRENGTH: "strength",
   AGILITY: "agility",
-  INTELLIGENCE: "intelligence",
+  WISDOM: "wisdom",
+  INTELLIGENCE: "wisdom",
 };
 
 export const CHALLENGE_LABELS = {
@@ -94,7 +95,7 @@ export const CHALLENGE_LABELS = {
   [CHALLENGES.CONSTITUTION]: "CONSTITUCIÓN",
   [CHALLENGES.STRENGTH]: "FUERZA",
   [CHALLENGES.AGILITY]: "AGILIDAD",
-  [CHALLENGES.INTELLIGENCE]: "INTELIGENCIA",
+  [CHALLENGES.WISDOM]: "SABIDURÍA",
 };
 
 export const SCENES = {
@@ -110,10 +111,13 @@ export const SCENES = {
   STRENGTH: "StrengthScene",
   AGILITY: "AgilityScene",
   INTELLIGENCE: "IntelligenceScene",
+  WISDOM: "IntelligenceScene",
   NAME_SELECTION: "NameSelectionScene",
   CLASS_SELECTION: "ClassSelectionScene",
   HERO_SUMMARY: "HeroSummaryScene",
   ADVENTURE: "AdventureScene",
+  MAP: "MapScene",
+  COMBAT: "CombatScene",
 };
 
 export const HERO_NAME_PREFIXES = [

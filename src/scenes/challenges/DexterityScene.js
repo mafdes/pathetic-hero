@@ -40,14 +40,15 @@ export class DexterityScene extends Phaser.Scene {
   }
 
   init(data) {
+    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(19, Math.max(0, data.startLevel)) : 0;
     this._challenge     = data?.challenge ?? CHALLENGES.DEXTERITY;
     this._sheetData     = data?.sheet ?? null;
-    this._currentLevel  = 1;
+    this._currentLevel  = startLvl + 1;
     this._maxLevels     = 20;
     this._alive         = true;
     this._inCountdown   = true;
     this._inputCooldown = false;
-    this._score         = 0;
+    this._score         = startLvl;
 
     this._zoneT         = 0;
     this._zoneBaseX     = 0;

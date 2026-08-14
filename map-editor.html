@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🗺️ Pathetic Hero — Map Editor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background:#0e0a1a; color:#f0e6d3; font-family:'Courier New',monospace; display:flex; height:100vh; overflow:hidden; }
+  #sidebar { width:230px; min-width:230px; background:#1a0f2e; border-right:2px solid #3d2a5a; display:flex; flex-direction:column; padding:12px; gap:10px; overflow-y:auto; }
+  #sidebar h1 { font-size:13px; color:#d4a017; text-align:center; border-bottom:1px solid #3d2a5a; padding-bottom:8px; }
+  #sidebar h2 { font-size:11px; color:#6a4e8a; margin-top:4px; margin-bottom:4px; }
+  .tile-btn { display:flex; align-items:center; gap:8px; padding:7px 9px; border:2px solid #3d2a5a; border-radius:6px; cursor:pointer; font-family:'Courier New',monospace; font-size:11px; color:#f0e6d3; background:#150d25; transition:all .15s; user-select:none; }
+  .tile-btn:hover { border-color:#d4a017; background:#2a1a42; }
+  .tile-btn.active { border-color:#f0c040; background:#2a1a42; box-shadow:0 0 8px #d4a017aa; }
+  .tile-btn .swatch { width:22px; height:22px; border-radius:4px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:13px; }
+  hr { border:none; border-top:1px solid #3d2a5a; }
+  .ctrl-row { display:flex; gap:6px; align-items:center; font-size:11px; color:#c8a97a; }
+  .ctrl-row input[type="number"] { width:52px; background:#0e0a1a; border:1px solid #3d2a5a; color:#f0e6d3; padding:4px; border-radius:4px; font-size:11px; }
+  .ctrl-row label { color:#6a4e8a; }
+  button.action { width:100%; padding:9px; border:none; border-radius:6px; cursor:pointer; font-family:'Courier New',monospace; font-size:11px; font-weight:bold; transition:all .15s; }
+  button.action.gold { background:#d4a017; color:#1a0a2e; }
+  button.action.gold:hover { background:#f0c040; }
+  button.action.red { background:#5a1a1a; color:#ff8888; border:1px solid #8b3333; }
+  button.action.red:hover { background:#7a2222; }
+  button.action.purple { background:#3d2a5a; color:#c8a97a; border:1px solid #6a4e8a; }
+  button.action.purple:hover { background:#52396e; }
+  #canvas-area { flex:1; display:flex; flex-direction:column; align-items:center; overflow:auto; padding:16px; gap:12px; }
+  #map-canvas { image-rendering:pixelated; cursor:crosshair; border:2px solid #3d2a5a; border-radius:4px; }
+  #output-area { width:100%; max-width:700px; }
+  #output-area h2 { font-size:12px; color:#6a4e8a; margin-bottom:6px; }
+  #output-box { width:100%; background:#07040a; color:#f0c040; border:1px solid #3d2a5a; padding:10px; font-family:'Courier New',monospace; font-size:12px; border-radius:6px; resize:vertical; min-height:120px; white-space:pre; }
+  .legend-row { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
+  .legend-pill { background:#150d25; border:1px solid #3d2a5a; border-radius:10px; padding:2px 8px; font-size:10px; color:#c8a97a; }
+  #status-bar { font-size:11px; color:#6a4e8a; align-self:flex-start; }
+  .btn-row { display:flex; gap:6px; margin-top:6px; }
+  .btn-row button { width:auto; padding:8px 18px; }
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <h1>🗡️ MAP EDITOR<br><span style="color:#6a4e8a;font-size:10px">Pathetic Hero v0.3</span></h1>
+
+  <h2>📂 CARGAR NIVEL</h2>
+  <button class="action purple" id="btn-load-lvl1">📜 Cargar Nivel 1 (Planta B1)</button>
+  <button class="action purple" id="btn-load-lvl2" style="margin-top:4px">📜 Cargar Nivel 2 (Archivos)</button>
+
+  <hr>
+  <h2>📐 TAMAÑO</h2>
+  <div class="ctrl-row">
+    <label>Cols:</label><input type="number" id="inp-cols" value="13" min="5" max="30">
+    <label>Filas:</label><input type="number" id="inp-rows" value="19" min="5" max="40">
+  </div>
+  <button class="action purple" id="btn-resize" style="margin-top:4px">Aplicar tamaño</button>
+
+  <hr>
+  <h2>🎨 PINCEL <span style="color:#3d2a5a">(teclas 1-9)</span></h2>
+  <div id="tile-palette"></div>
+
+  <hr>
+  <h2>⚙️ ACCIONES</h2>
+  <button class="action gold" id="btn-export">📋 Exportar al juego</button>
+  <button class="action purple" id="btn-import" style="margin-top:4px">📥 Importar ASCII</button>
+  <button class="action red" id="btn-clear" style="margin-top:4px">🗑️ Limpiar mapa</button>
+
+  <hr>
+  <h2>📖 LEYENDA</h2>
+  <div class="legend-row" id="legend"></div>
+</div>
+
+<div id="canvas-area">
+  <div id="status-bar">Click o arrastra para pintar · Teclas 1-9 cambian tile</div>
+  <canvas id="map-canvas"></canvas>
+  <div id="output-area" style="display:none">
+    <h2>📋 Copia en src/data/levels.js (campo map):</h2>
+    <textarea id="output-box" readonly></textarea>
+    <div class="btn-row">
+      <button class="action gold" id="btn-copy">Copiar al portapapeles</button>
+      <button class="action purple" id="btn-close-output">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TILES=[
+  {char:'#',label:'Muro',color:'#2c1f0e',emoji:'🧱'},
+  {char:'.',label:'Suelo',color:'#1a140e',emoji:''},
+  {char:'@',label:'Inicio',color:'#1a3c22',emoji:'🧝'},
+  {char:'E',label:'Encuentro',color:'#3c1a3c',emoji:'⚔️'},
+  {char:'K',label:'Llave',color:'#4a3a00',emoji:'🗝️'},
+  {char:'D',label:'Puerta',color:'#3d2010',emoji:'🚪'},
+  {char:'C',label:'Cofre',color:'#4a3a0a',emoji:'📦'},
+  {char:'T',label:'Trampa',color:'#3c1a1a',emoji:'⚙️'},
+  {char:'F',label:'Fuente',color:'#0a2a4a',emoji:'💧'},
+  {char:'R',label:'Runa',color:'#2a0a4a',emoji:'✨'},
+  {char:'S',label:'Escaleras',color:'#3a2a0a',emoji:'🔺'},
+];
+const TILE_MAP=Object.fromEntries(TILES.map(t=>[t.char,t]));
+const TS=36;
+let cols=13,rows=19,grid=[],activeTile='#',isPainting=false;
+
+// Mapas predefinidos del juego
+const LEVEL_MAPS = {
+  1: [
+    "#############",
+    "#@..........#",
+    "#.##.######.#",
+    "#....#.E....#",
+    "#.##.#.####.#",
+    "#.#..#......#",
+    "#.#.##.####.#",
+    "#...T......##",
+    "###.######..#",
+    "#R..#....#..#",
+    "#.###.##.#.##",
+    "#.....#F.#..#",
+    "#.###.####.##",
+    "##..T....#C.#",
+    "#.####D###..#",
+    "#....#.E....#",
+    "#.##.#..####.",
+    "#K...#.....S#",
+    "#############"
+  ],
+  2: [
+    "#############",
+    "#...........#",
+    "#.###.#####.#",
+    "#.#.E.#.....#",
+    "#.#.###.###.#",
+    "#...T.....E.#",
+    "#.#####.###.#",
+    "#.......#...#",
+    "#.###.###.#.#",
+    "#.#.E.....#.#",
+    "#.#.#######.#",
+    "#R..#...F...#",
+    "#.###.#####.#",
+    "#.....#.C...#",
+    "#.###.#.###.#",
+    "#.#...#...E.#",
+    "#.#.#####.#.#",
+    "#@..#.....S.#",
+    "#############"
+  ]
+};
+
+function loadLevelPreset(lvlNum) {
+  const mapData = LEVEL_MAPS[lvlNum];
+  if (!mapData) return;
+  rows = mapData.length;
+  cols = mapData[0].length;
+  document.getElementById('inp-cols').value = cols;
+  document.getElementById('inp-rows').value = rows;
+  grid = mapData.map(l => l.split(''));
+  resizeCanvas();
+  drawGrid();
+}
+
+function initGrid(c,r,keep=false){
+  const og=keep?grid:null;cols=c;rows=r;grid=[];
+  for(let rr=0;rr<rows;rr++){
+    grid[rr]=[];
+    for(let cc=0;cc<cols;cc++){
+      const b=rr===0||rr===rows-1||cc===0||cc===cols-1;
+      if(keep&&og[rr]&&og[rr][cc]!==undefined)grid[rr][cc]=og[rr][cc];
+      else grid[rr][cc]=b?'#':'.';
+    }
+  }
+  if(!keep)grid[1][1]='@';
+}
+
+function buildPalette(){
+  const p=document.getElementById('tile-palette');p.innerHTML='';
+  TILES.forEach(t=>{
+    const btn=document.createElement('div');
+    btn.className='tile-btn'+(t.char===activeTile?' active':'');
+    btn.innerHTML=`<div class="swatch" style="background:${t.color}">${t.emoji}</div><span>${t.label} [${t.char}]</span>`;
+    btn.addEventListener('click',()=>{
+      activeTile=t.char;
+      document.querySelectorAll('.tile-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+    p.appendChild(btn);
+  });
+  document.getElementById('legend').innerHTML=TILES.map(t=>`<span class="legend-pill">${t.emoji} ${t.char}=${t.label}</span>`).join('');
+}
+
+const canvas=document.getElementById('map-canvas');const ctx=canvas.getContext('2d');
+function resizeCanvas(){canvas.width=cols*TS;canvas.height=rows*TS;}
+function drawGrid(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const ch=grid[r][c];
+      const tile=TILE_MAP[ch]||TILE_MAP['.'];
+      const x=c*TS,y=r*TS;
+      ctx.fillStyle=tile.color;
+      ctx.fillRect(x,y,TS,TS);
+      ctx.strokeStyle='#ffffff10';
+      ctx.lineWidth=0.5;
+      ctx.strokeRect(x,y,TS,TS);
+      if(ch!=='#'&&ch!=='.'){
+        ctx.font=`${TS*0.52}px serif`;
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText(tile.emoji,x+TS/2,y+TS/2);
+      }else if(ch==='#'){
+        ctx.fillStyle='#ffffff06';
+        for(let i=0;i<TS;i+=8){
+          ctx.fillRect(x+i,y,1,TS);
+          ctx.fillRect(x,y+i,TS,1);
+        }
+      }
+      ctx.font='8px Courier New';
+      ctx.fillStyle='#ffffff33';
+      ctx.textAlign='left';
+      ctx.textBaseline='top';
+      ctx.fillText(ch,x+2,y+2);
+    }
+  }
+}
+
+function getCell(e){const r=canvas.getBoundingClientRect();const sx=canvas.width/r.width,sy=canvas.height/r.height;return{c:Math.floor((e.clientX-r.left)*sx/TS),r:Math.floor((e.clientY-r.top)*sy/TS)};}
+function paint(e){
+  const{c,r}=getCell(e);
+  if(c<0||c>=cols||r<0||r>=rows)return;
+  if(activeTile==='@')for(let rr=0;rr<rows;rr++)for(let cc=0;cc<cols;cc++)if(grid[rr][cc]==='@')grid[rr][cc]='.';
+  grid[r][c]=activeTile;
+  document.getElementById('status-bar').textContent=`(col=${c}, fila=${r})  tile=${activeTile} ${TILE_MAP[activeTile]?.label||'?'}`;
+  drawGrid();
+}
+
+canvas.addEventListener('mousedown',e=>{isPainting=true;paint(e);});
+canvas.addEventListener('mousemove',e=>{if(isPainting)paint(e);});
+window.addEventListener('mouseup',()=>isPainting=false);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();isPainting=true;paint(e.touches[0]);},{passive:false});
+canvas.addEventListener('touchmove',e=>{e.preventDefault();if(isPainting)paint(e.touches[0]);},{passive:false});
+window.addEventListener('touchend',()=>isPainting=false);
+
+document.addEventListener('keydown',e=>{
+  const n=parseInt(e.key);
+  if(!isNaN(n)&&n>=1&&n<=TILES.length){
+    activeTile=TILES[n-1].char;
+    document.querySelectorAll('.tile-btn').forEach((b,i)=>b.classList.toggle('active',TILES[i].char===activeTile));
+  }
+});
+
+document.getElementById('btn-load-lvl1').addEventListener('click', () => loadLevelPreset(1));
+document.getElementById('btn-load-lvl2').addEventListener('click', () => loadLevelPreset(2));
+
+document.getElementById('btn-export').addEventListener('click',()=>{
+  const lines=grid.map(row=>row.join(''));
+  const out='map: [\n'+lines.map(l=>`      "${l}",`).join('\n')+'\n    ],';
+  document.getElementById('output-box').value=out;
+  const a=document.getElementById('output-area');
+  a.style.display='block';
+  a.scrollIntoView({behavior:'smooth'});
+});
+
+document.getElementById('btn-copy').addEventListener('click',()=>{
+  const box=document.getElementById('output-box');
+  box.select();
+  navigator.clipboard.writeText(box.value).then(()=>{
+    const btn=document.getElementById('btn-copy');
+    btn.textContent='✅ Copiado!';
+    setTimeout(()=>btn.textContent='Copiar al portapapeles',2000);
+  });
+});
+
+document.getElementById('btn-close-output').addEventListener('click',()=>{document.getElementById('output-area').style.display='none';});
+
+document.getElementById('btn-import').addEventListener('click',()=>{
+  const raw=prompt('Pega las líneas del mapa (entre los corchetes):');
+  if(!raw)return;
+  const lines=raw.split('\n').map(l=>l.trim().replace(/^"|",?$/g,'')).filter(l=>l.length>0);
+  if(lines.length<2){alert('Formato no reconocido');return;}
+  rows=lines.length;cols=lines[0].length;
+  document.getElementById('inp-cols').value=cols;
+  document.getElementById('inp-rows').value=rows;
+  grid=lines.map(l=>l.split(''));
+  resizeCanvas();drawGrid();
+});
+
+document.getElementById('btn-clear').addEventListener('click',()=>{if(!confirm('¿Limpiar el mapa?'))return;initGrid(cols,rows,false);drawGrid();});
+document.getElementById('btn-resize').addEventListener('click',()=>{
+  const nc=parseInt(document.getElementById('inp-cols').value);
+  const nr=parseInt(document.getElementById('inp-rows').value);
+  if(isNaN(nc)||isNaN(nr)||nc<5||nr<5){alert('Mínimo 5×5');return;}
+  initGrid(nc,nr,true);resizeCanvas();drawGrid();
+});
+
+// STARTUP — Cargar Nivel 1 por defecto
+buildPalette();
+loadLevelPreset(1);
+</script>
+</body>
+</html>

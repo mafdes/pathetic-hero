@@ -13,13 +13,9 @@ export class PreloadScene extends Phaser.Scene {
   preload() {
     this._buildLoadingUI();
 
-    // ── Imágenes ──────────────────────────────────────────────────────────────
-    // this.load.image("bg_intro", "assets/images/bg_intro.png");
-    // this.load.image("bg_menu",  "assets/images/bg_menu.png");
-
-    // ── Audio ─────────────────────────────────────────────────────────────────
-    // this.load.audio("music_menu", ["assets/audio/menu.ogg"]);
-    // this.load.audio("sfx_confirm", ["assets/audio/confirm.ogg"]);
+    // ── Mapa de Tiled y Tileset ───────────────────────────────────────────────
+    this.load.image("dungeon_tiles", "assets/tilesets/dungeon_tiles.jpg");
+    this.load.tilemapTiledJSON("level1_tiled", "assets/maps/nivel1.json");
   }
 
   create() {

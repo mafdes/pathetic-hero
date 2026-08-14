@@ -172,10 +172,40 @@ export class GuildReportScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(DEPTHS.UI);
     }
 
+    // ── Nivel de Inicio de Pruebas DEV (Stepper 0-19) ──────────────────────
+    if (this._debugStartLevel === undefined) this._debugStartLevel = 0;
+
+    const levelBoxY = H - 165;
+    this.add.text(cx - 100, levelBoxY, "NIVEL INICIO DEV:", {
+      fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#6a4e8a", resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI);
+
+    const minusBtn = this.add.text(cx + 40, levelBoxY, "[-]", {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#d4a017", resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI).setInteractive({ useHandCursor: true });
+
+    const lvlText = this.add.text(cx + 85, levelBoxY, `LVL ${this._debugStartLevel}`, {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#f0c040", resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI);
+
+    const plusBtn = this.add.text(cx + 130, levelBoxY, "[+]", {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#d4a017", resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI).setInteractive({ useHandCursor: true });
+
+    minusBtn.on("pointerdown", () => {
+      this._debugStartLevel = Math.max(0, this._debugStartLevel - 1);
+      lvlText.setText(`LVL ${this._debugStartLevel}`);
+    });
+
+    plusBtn.on("pointerdown", () => {
+      this._debugStartLevel = Math.min(19, this._debugStartLevel + 1);
+      lvlText.setText(`LVL ${this._debugStartLevel}`);
+    });
+
     // ── Botón Temporal de Autocompletado Aleatorio (DEV) ABAJO ──────────────
-    const devBtn = this.add.text(cx, H - 125, "[ 🎲 AUTO-COMPLETAR PRUEBAS DEV ]", {
+    const devBtn = this.add.text(cx - 130, H - 120, "[ 🎲 AUTO-COMPLETAR DEV ]", {
       fontFamily: FONTS.PRIMARY,
-      fontSize: "13px",
+      fontSize: "12px",
       color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI)
@@ -184,6 +214,18 @@ export class GuildReportScene extends Phaser.Scene {
     devBtn.on("pointerover", () => devBtn.setColor("#ffffff"));
     devBtn.on("pointerout",  () => devBtn.setColor("#d4a017"));
     devBtn.on("pointerdown", () => this._fillRandomScores());
+
+    const dungeonDevBtn = this.add.text(cx + 130, H - 120, "[ ⚡ SALTO MAZMORRA DEV ]", {
+      fontFamily: FONTS.PRIMARY,
+      fontSize: "12px",
+      color: "#4caf77",
+      resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI)
+      .setInteractive({ useHandCursor: true });
+
+    dungeonDevBtn.on("pointerover", () => dungeonDevBtn.setColor("#ffffff"));
+    dungeonDevBtn.on("pointerout",  () => dungeonDevBtn.setColor("#4caf77"));
+    dungeonDevBtn.on("pointerdown", () => this._devJumpToMap());
 
     // ── Volver al Menú ────────────────────────────────────────────────────────
     new PixelButton(this, cx, H - 55, "< MENU PRINCIPAL",
@@ -194,12 +236,15 @@ export class GuildReportScene extends Phaser.Scene {
 
   _fillRandomScores() {
     CHALLENGE_ORDER.forEach(id => {
-      if (this.sheet.attributes[id] === null) {
-        this.sheet.setAttribute(id, randInt(3, 18));
-      }
+      this.sheet.attributes[id] = randInt(1, 6);
     });
     SaveManager.save(this.sheet);
     this.scene.restart();
+  }
+
+  _devJumpToMap() {
+    this._fillRandomScores();
+    this.scene.start(SCENES.MAP, { levelId: 1 });
   }
 
   _openChallenge(id) {
@@ -207,7 +252,7 @@ export class GuildReportScene extends Phaser.Scene {
     if (!sceneKey) return;
     this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
     this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
-      this.scene.start(sceneKey, { challenge: id, sheet: this.sheet.toJSON() });
+      this.scene.start(sceneKey, { challenge: id, sheet: this.sheet.toJSON(), startLevel: this._debugStartLevel || 0 });
     });
   }
 

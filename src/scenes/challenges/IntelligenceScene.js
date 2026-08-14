@@ -43,27 +43,28 @@ export class IntelligenceScene extends Phaser.Scene {
   }
 
   init(data) {
-    this._challenge     = data?.challenge ?? CHALLENGES.INTELLIGENCE;
+    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(19, Math.max(0, data.startLevel)) : 0;
+    this._challenge     = data?.challenge ?? CHALLENGES.WISDOM;
     this._sheetData     = data?.sheet ?? null;
-    this._currentLevel  = 1;
+    this._currentLevel  = startLvl + 1;
     this._maxLevels     = TOTAL_ROUNDS;
     this._alive         = true;
     this._inCountdown   = true;
-    this._score         = 0;
+    this._score         = startLvl;
 
-    this._sequence        = [];
-    this._expectedInput   = [];
-    this._playerInput     = [];
-    this._tilePositions   = [0, 1, 2, 3, 4, 5];
-    this._isBoardFaceDown = false;
-    this._isShowing       = false;
+    this._sequence            = [];
+    this._expectedInput       = [];
+    this._playerInput         = [];
+    this._tilePositions       = [0, 1, 2, 3, 4, 5];
+    this._isTilesFaceDown     = false;
+    this._inputCooldown       = false;
   }
 
   create() {
     const W = this.scale.width;
     const H = this.scale.height;
 
-    this.cameras.main.setBackgroundColor(0x0e1424);
+    this.cameras.main.setBackgroundColor(0x070c17);
     this.cameras.main.fadeIn(TIMING.TRANSITION_DURATION, 0, 0, 0);
 
     // Fondo Biblioteca Arcana
@@ -78,7 +79,7 @@ export class IntelligenceScene extends Phaser.Scene {
     this.add.rectangle(W / 2, 55, W - 60, 80, COLORS.UI_PANEL, 0.95)
       .setStrokeStyle(3, 0x3b82f6).setDepth(DEPTHS.UI_BG);
 
-    this.add.text(W / 2, 38, "SALA 05: INTELIGENCIA", {
+    this.add.text(W / 2, 38, "SALA 05: SABIDURÍA", {
       fontFamily: FONTS.PRIMARY, fontSize: "24px", color: "#60a5fa", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 

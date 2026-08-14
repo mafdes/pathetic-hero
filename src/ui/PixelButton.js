@@ -3,6 +3,7 @@
  */
 
 import { COLORS, FONTS, FONT_SIZES, DEPTHS } from "../utils/constants.js";
+import { SoundFx } from "../systems/SoundFx.js";
 
 export class PixelButton {
   /**
@@ -61,7 +62,12 @@ export class PixelButton {
     this._bg
       .on("pointerover", () => this.select())
       .on("pointerout",  () => { if (!this._selected) this.deselect(); })
-      .on("pointerdown", () => { if (this._enabled) this.onClick(); });
+      .on("pointerdown", () => {
+        if (this._enabled) {
+          SoundFx.playButtonClick();
+          this.onClick();
+        }
+      });
 
     this._updateVisuals();
   }

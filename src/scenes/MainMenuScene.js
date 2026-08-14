@@ -7,7 +7,10 @@ import { COLORS, FONTS, FONT_SIZES, SCENES, TIMING, DEPTHS } from "../utils/cons
 import { SaveManager } from "../systems/SaveManager.js";
 import { PixelButton } from "../ui/PixelButton.js";
 
-const MENU_ITEMS = [
+import { CharacterSheet } from "../systems/CharacterSheet.js";
+import { generateHeroName, randInt } from "../utils/helpers.js";
+
+const MENU_ITEMS_BASE = [
   { id: "new",     label: "NUEVA PARTIDA" },
   { id: "options", label: "OPCIONES"      },
 ];
@@ -17,6 +20,7 @@ export class MainMenuScene extends Phaser.Scene {
     super({ key: SCENES.MAIN_MENU });
     this._selectedIndex = 0;
     this._buttons = [];
+    this._menuItems = [];
   }
 
   create() {
@@ -66,26 +70,46 @@ export class MainMenuScene extends Phaser.Scene {
 
     this.add.rectangle(W / 2, 410, W - 100, 3, COLORS.GOLD_DARK).setDepth(DEPTHS.UI);
 
-    // ── Botones HD ────────────────────────────────────────────────────────────
-    const startY = 600;
-    const gap = 130;
+    // ── Botones Dinámicos: CONTINUAR / NUEVA PARTIDA / OPCIONES ─────────────
+    const savedData = SaveManager.load();
+    this._menuItems = [];
+    if (savedData) {
+      this._menuItems.push({ id: "continue", label: "CONTINUAR" });
+    }
+    this._menuItems.push({ id: "new", label: "NUEVA PARTIDA" });
+    this._menuItems.push({ id: "options", label: "OPCIONES" });
 
-    this._buttons = MENU_ITEMS.map((item, i) => {
+    const startY = savedData ? 480 : 540;
+    const gap = 110;
+
+    this._buttons = this._menuItems.map((item, i) => {
       const btn = new PixelButton(
         this,
         W / 2,
         startY + i * gap,
         item.label,
         () => this._onSelect(item.id),
-        { width: 600, height: 96, fontSize: "32px" }
+        { width: 560, height: 86, fontSize: "28px" }
       );
       return btn;
     });
 
     this._updateSelection();
 
+    // ── BOTÓN SALTO DEV A MAZMORRA (VIDA Y STATS FULL) ─────────────────────
+    const devBtn = this.add.text(W / 2, H - 110, "[ ⚡ SALTO DIRECTO A MAZMORRA (DEV) ]", {
+      fontFamily: FONTS.PRIMARY,
+      fontSize: "14px",
+      color: "#d4a017",
+      resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI).setInteractive({ useHandCursor: true });
+
+    devBtn.on("pointerover", () => devBtn.setColor("#ffffff"));
+    devBtn.on("pointerout",  () => devBtn.setColor("#d4a017"));
+    devBtn.on("pointerdown", () => this._devJumpToDungeon());
+
     // ── Versión ───────────────────────────────────────────────────────────────
-    this.add.text(W / 2, H - 50, "v0.1.0 — Pathetic Hero", {
+    this.add.text(W / 2, H - 50, "v0.3.0 — Pathetic Hero", {
       fontFamily: FONTS.PRIMARY,
       fontSize: "20px",
       color: "#3d3d6b",
@@ -100,7 +124,7 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   _moveSelection(dir) {
-    const total = MENU_ITEMS.length;
+    const total = this._menuItems.length;
     const next = (this._selectedIndex + dir + total) % total;
     this._selectedIndex = next;
     this._updateSelection();
@@ -114,13 +138,16 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   _confirmSelection() {
-    this._onSelect(MENU_ITEMS[this._selectedIndex].id);
+    this._onSelect(this._menuItems[this._selectedIndex].id);
   }
 
   _onSelect(id) {
     this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
     this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
       switch (id) {
+        case "continue":
+          this._continueSavedGame();
+          break;
         case "new":
           SaveManager.clear();
           this.scene.start(SCENES.NAME_SELECTION);
@@ -129,6 +156,46 @@ export class MainMenuScene extends Phaser.Scene {
           this.scene.start(SCENES.OPTIONS);
           break;
       }
+    });
+  }
+
+  _continueSavedGame() {
+    const saved = SaveManager.load();
+    const sheet = new CharacterSheet();
+    if (saved) sheet.fromJSON(saved);
+
+    // Garantizar que no esté a 0 para pasar el Tribunal de Admisión
+    let hasNonZero = Object.values(sheet.attributes).some(v => v !== null && v > 0);
+    if (!hasNonZero) {
+      Object.keys(sheet.attributes).forEach(k => {
+        sheet.attributes[k] = randInt(3, 6);
+      });
+    }
+    SaveManager.save(sheet);
+
+    this.scene.start(SCENES.MAP, { levelId: 1 });
+  }
+
+  _devJumpToDungeon() {
+    const saved = SaveManager.load();
+    const sheet = new CharacterSheet();
+    if (saved) {
+      sheet.fromJSON(saved);
+    } else {
+      sheet.name = generateHeroName();
+    }
+
+    // Asegurar stats potentes para pruebas (4..8)
+    Object.keys(sheet.attributes).forEach(k => {
+      if (!sheet.attributes[k] || sheet.attributes[k] === 0) {
+        sheet.attributes[k] = randInt(4, 8);
+      }
+    });
+    SaveManager.save(sheet);
+
+    this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
+    this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
+      this.scene.start(SCENES.MAP, { levelId: 1 });
     });
   }
 }
