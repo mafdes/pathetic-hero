@@ -118,6 +118,7 @@ export const SCENES = {
   ADVENTURE: "AdventureScene",
   MAP: "MapScene",
   COMBAT: "CombatScene",
+  CREDITS: "CreditsScene",
 };
 
 export const HERO_NAME_PREFIXES = [

@@ -14,8 +14,16 @@ export class PreloadScene extends Phaser.Scene {
     this._buildLoadingUI();
 
     // ── Mapa de Tiled y Tileset ───────────────────────────────────────────────
-    this.load.image("dungeon_tiles", "assets/tilesets/dungeon_tiles.jpg");
+    this.load.image("dungeon_tiles", "assets/tilesets/dungeon_tiles.png");
+    this.load.spritesheet("dungeon_tiles_sheet", "assets/tilesets/dungeon_tiles.png", { frameWidth: 32, frameHeight: 32 });
     this.load.tilemapTiledJSON("level1_tiled", "assets/maps/nivel1.json");
+
+    // ── Sprites de Cofres, Llaves y Monedas (Jan Schneider) ────────────────────
+    this.load.spritesheet("item_chest", "assets/images/items/Chest.png", { frameWidth: 14, frameHeight: 18 });
+    this.load.spritesheet("item_chest_locked", "assets/images/items/Chest_Locked.png", { frameWidth: 14, frameHeight: 18 });
+    this.load.image("item_key", "assets/images/items/Key.png");
+    this.load.spritesheet("item_coin", "assets/images/items/Coin.png", { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet("item_coin_sparkle", "assets/images/items/Coin_Sparkle.png", { frameWidth: 32, frameHeight: 32 });
   }
 
   create() {

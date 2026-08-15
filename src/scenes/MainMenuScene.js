@@ -78,9 +78,10 @@ export class MainMenuScene extends Phaser.Scene {
     }
     this._menuItems.push({ id: "new", label: "NUEVA PARTIDA" });
     this._menuItems.push({ id: "options", label: "OPCIONES" });
+    this._menuItems.push({ id: "credits", label: "CRÉDITOS" });
 
-    const startY = savedData ? 480 : 540;
-    const gap = 110;
+    const startY = savedData ? 460 : 510;
+    const gap = 100;
 
     this._buttons = this._menuItems.map((item, i) => {
       const btn = new PixelButton(
@@ -89,7 +90,7 @@ export class MainMenuScene extends Phaser.Scene {
         startY + i * gap,
         item.label,
         () => this._onSelect(item.id),
-        { width: 560, height: 86, fontSize: "28px" }
+        { width: 560, height: 80, fontSize: "26px" }
       );
       return btn;
     });
@@ -154,6 +155,9 @@ export class MainMenuScene extends Phaser.Scene {
           break;
         case "options":
           this.scene.start(SCENES.OPTIONS);
+          break;
+        case "credits":
+          this.scene.start(SCENES.CREDITS);
           break;
       }
     });

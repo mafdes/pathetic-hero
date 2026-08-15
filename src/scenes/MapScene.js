@@ -217,6 +217,12 @@ export class MapScene extends Phaser.Scene {
   }
 
   _buildDungeon() {
+    const tiledData = this.cache.tilemap.get('level1_tiled');
+    if (tiledData && tiledData.data) {
+      this._buildDungeonFromTiled(tiledData.data);
+      return;
+    }
+
     const level = this._levelData;
 
     // ── Mapa estructural (ASCII, solo # y tiles de un único char) ──────────
@@ -311,6 +317,206 @@ export class MapScene extends Phaser.Scene {
           const sprite = this.add.image(wx, wy, 'entity-stairs');
           this.entities[`${c},${r}`] = { type: 'stairs', sprite };
         }
+      }
+    }
+
+    const pwx = this.offsetX + this.playerPos.x * this.tileSize + this.tileSize / 2;
+    const pwy = this.offsetY + this.playerPos.y * this.tileSize + this.tileSize / 2;
+    this.playerSprite = this.add.image(pwx, pwy, 'entity-player').setDepth(DEPTHS.PLAYER);
+
+    this._updateFogOfWar();
+  }
+
+  _buildDungeonFromTiled(tiledMap) {
+    this.cols = tiledMap.width;
+    this.rows = tiledMap.height;
+    this.tileSize = 48; // Escala adaptada para Phaser UI
+
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const mapWidth = this.cols * this.tileSize;
+    const mapHeight = this.rows * this.tileSize;
+    const availH = H - this._HEADER_H - this._FOOTER_H;
+
+    this.offsetX = (W - mapWidth) / 2;
+    this.offsetY = this._HEADER_H + Math.max(0, (availH - mapHeight) / 2);
+
+    this.grid = [];
+    this.entities = {};
+    this.fogTiles = {};
+    this.visitedTiles = new Set();
+    this.playerPos = { x: 1, y: 1 };
+    this.isMoving = false;
+    this.visionRadius = 4;
+
+    for (let r = 0; r < this.rows; r++) {
+      this.grid[r] = [];
+    }
+
+    // Process Tile Layers (Terreno / Suelo / Paredes)
+    const tileLayers = tiledMap.layers.filter(l => l.type === 'tilelayer');
+    tileLayers.forEach(layer => {
+      const data = layer.data;
+      for (let r = 0; r < this.rows; r++) {
+        for (let c = 0; c < this.cols; c++) {
+          const gid = data[r * this.cols + c];
+          if (gid === 0) continue;
+
+          const wx = this.offsetX + c * this.tileSize + this.tileSize / 2;
+          const wy = this.offsetY + r * this.tileSize + this.tileSize / 2;
+
+          // Wall GIDs: 6 (roof), 7 (brick wall), 8 (torch wall), 19 (column), 22 (barrel), 23 (crate)
+          const isWall = [6, 7, 8, 19, 22, 23].includes(gid);
+
+          // Renderizar la textura exacta del tileset dibujada en Tiled (frame index = gid - 1)
+          if (this.textures.exists('dungeon_tiles_sheet')) {
+            this.add.image(wx, wy, 'dungeon_tiles_sheet', gid - 1)
+              .setDisplaySize(this.tileSize, this.tileSize);
+          } else {
+            this.add.image(wx, wy, isWall ? 'tile-wall' : 'tile-floor');
+          }
+
+          if (isWall) {
+            this.grid[r][c] = { type: 'wall' };
+          } else {
+            if (!this.grid[r][c]) this.grid[r][c] = { type: 'floor' };
+          }
+
+          // Special Tiles GIDs (Entidades creadas por tiles especiales)
+          if (gid === 11) { // Escaleras
+            const sprite = this.add.image(wx, wy, 'entity-stairs');
+            this.entities[`${c},${r}`] = { type: 'stairs', sprite };
+          } else if (gid === 13) { // Cofre
+            const sprite = this.add.image(wx, wy, 'entity-chest');
+            this.entities[`${c},${r}`] = { type: 'chest', sprite };
+          } else if (gid === 15) { // Llave
+            const sprite = this.add.image(wx, wy, 'entity-key');
+            this.entities[`${c},${r}`] = { type: 'key', sprite };
+          } else if (gid === 9) { // Puerta
+            const sprite = this.add.image(wx, wy, 'entity-door');
+            this.entities[`${c},${r}`] = { type: 'door', sprite };
+          } else if (gid === 16) { // Trampa
+            const sprite = this.add.image(wx, wy, 'entity-trap');
+            this.entities[`${c},${r}`] = { type: 'trap', sprite };
+          } else if (gid === 17) { // Fuente
+            const sprite = this.add.image(wx, wy, 'entity-fountain');
+            this.entities[`${c},${r}`] = { type: 'fountain', sprite };
+          } else if (gid === 18) { // Runa
+            const sprite = this.add.image(wx, wy, 'entity-rune');
+            this.entities[`${c},${r}`] = { type: 'rune', sprite };
+          }
+        }
+      }
+    });
+
+    // Ensure all grid slots have a floor default if empty
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        if (!this.grid[r][c]) this.grid[r][c] = { type: 'floor' };
+      }
+    }
+
+    // Process Object Groups
+    const objectGroups = tiledMap.layers.filter(l => l.type === 'objectgroup');
+    objectGroups.forEach(og => {
+      (og.objects || []).forEach(obj => {
+        const c = Math.floor(obj.x / 32);
+        const r = Math.floor(obj.y / 32);
+        const wx = this.offsetX + c * this.tileSize + this.tileSize / 2;
+        const wy = this.offsetY + r * this.tileSize + this.tileSize / 2;
+
+        const isType = (t, n) => obj.type === t || (obj.name && obj.name.toLowerCase().includes(n.toLowerCase()));
+
+        if (isType('PlayerSpawn', 'jugador')) {
+          this.playerPos = { x: c, y: r };
+        } else if (isType('Encounter', 'goblin') || obj.type === 'Encounter' || (obj.name && (obj.name.includes('Goblin') || obj.name.includes('Mago') || obj.name.includes('Trasgo')))) {
+          let enemyKeys = ['goblin'];
+          let count = 1;
+
+          if (obj.properties) {
+            const ep = obj.properties.find(p => p.name === 'enemies' || p.name === 'enemy');
+            const cp = obj.properties.find(p => p.name === 'count');
+            if (ep && ep.value) {
+              enemyKeys = String(ep.value).split(',').map(s => s.trim());
+            }
+            if (cp && cp.value) {
+              count = parseInt(cp.value) || 1;
+            }
+          } else if (obj.name && obj.name.includes('Mago')) {
+            enemyKeys = ['mago_novato'];
+          } else if (obj.name && obj.name.includes('Trasgo')) {
+            enemyKeys = ['trasgo'];
+          } else if (obj.name && obj.name.includes('Jefe')) {
+            enemyKeys = ['goblin_alpha'];
+          }
+
+          // Si sólo especificó 1 tipo pero un count > 1 (ej: enemy="goblin", count=3)
+          if (enemyKeys.length === 1 && count > 1) {
+            const baseKey = enemyKeys[0];
+            enemyKeys = new Array(count).fill(baseKey);
+          }
+
+          const enemyList = enemyKeys.map((k, idx) => ({
+            name: `${obj.name || 'Enemigo'} ${enemyKeys.length > 1 ? (idx + 1) : ''}`.trim(),
+            hp: k === 'goblin_alpha' ? 36 : (k === 'trasgo' ? 24 : 16),
+            maxHp: k === 'goblin_alpha' ? 36 : (k === 'trasgo' ? 24 : 16),
+            attack: k === 'goblin_alpha' ? 8 : (k === 'trasgo' ? 6 : 4),
+            key: k
+          }));
+
+          const encData = {
+            label: obj.name || 'Encuentro Multi-Enemigo',
+            enemies: enemyList
+          };
+
+          const sprite = this.add.image(wx, wy, 'entity-goblin');
+
+          let badge = null;
+          if (enemyList.length > 1) {
+            badge = this.add.text(wx + 14, wy - 14, `x${enemyList.length}`, {
+              fontFamily: FONTS.PRIMARY, fontSize: "13px", color: "#ff4444", resolution: 2,
+              stroke: "#000000", strokeThickness: 3,
+            }).setOrigin(0.5).setDepth(DEPTHS.PLAYER + 1).setVisible(false);
+          }
+
+          this.entities[`${c},${r}`] = { type: 'encounter', encounter: encData, sprite, badge };
+        } else if (isType('Stairs', 'escalera')) {
+          const sprite = this.add.image(wx, wy, 'entity-stairs');
+          this.entities[`${c},${r}`] = { type: 'stairs', sprite };
+        } else if (isType('ItemKey', 'llave')) {
+          const keyTexture = this.textures.exists('item_key') ? 'item_key' : 'entity-key';
+          const sprite = this.add.image(wx, wy, keyTexture);
+          if (keyTexture === 'item_key') sprite.setDisplaySize(this.tileSize * 0.65, this.tileSize * 0.65);
+          this.entities[`${c},${r}`] = { type: 'key', sprite };
+        } else if (isType('Door', 'puerta')) {
+          const sprite = this.add.image(wx, wy, 'entity-door');
+          this.entities[`${c},${r}`] = { type: 'door', sprite };
+        } else if (isType('Chest', 'cofre')) {
+          const chestTexture = this.textures.exists('item_chest') ? 'item_chest' : 'entity-chest';
+          const sprite = this.add.image(wx, wy, chestTexture, 0);
+          if (chestTexture === 'item_chest') sprite.setDisplaySize(this.tileSize * 0.8, this.tileSize * 0.8);
+          this.entities[`${c},${r}`] = { type: 'chest', sprite };
+        } else if (isType('Trap', 'trampa')) {
+          const sprite = this.add.image(wx, wy, 'entity-trap');
+          this.entities[`${c},${r}`] = { type: 'trap', sprite };
+        } else if (isType('Fountain', 'fuente')) {
+          const sprite = this.add.image(wx, wy, 'entity-fountain');
+          this.entities[`${c},${r}`] = { type: 'fountain', sprite };
+        } else if (isType('Rune', 'runa')) {
+          const sprite = this.add.image(wx, wy, 'entity-rune');
+          this.entities[`${c},${r}`] = { type: 'rune', sprite };
+        }
+      });
+    });
+
+    // Add fog of war overlay
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        const wx = this.offsetX + c * this.tileSize + this.tileSize / 2;
+        const wy = this.offsetY + r * this.tileSize + this.tileSize / 2;
+        const fog = this.add.rectangle(wx, wy, this.tileSize, this.tileSize, 0x07040a, 1)
+          .setDepth(DEPTHS.FX);
+        this.fogTiles[`${c},${r}`] = fog;
       }
     }
 

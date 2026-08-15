@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="15" height="15" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="21">
+ <editorsettings>
+  <export target="../public/assets/maps/nivel1.json" format="json"/>
+ </editorsettings>
+ <tileset firstgid="1" source="dungeon_tiles.tsx"/>
+ <layer id="1" name="Terreno" width="15" height="15">
+  <data encoding="csv">
+7,7,7,8,7,7,7,11,7,7,7,8,7,7,7,
+2684354567,2,2,2,2,2,2,2,2,2,2,2,2,2,8,
+2684354567,2,7,7,7,7,7,2,7,7,7,7,7,2,7,
+2684354567,2,2,2,2,3,2,2,2,2,2,2,3,2,7,
+7,7,8,2,7,8,7,7,7,8,7,7,2,8,7,
+2684354567,2,2,2,2,2,2,2,2,2,2,3,2,2,7,
+7,7,7,8,7,7,7,2,7,7,7,7,7,8,7,
+8,2,2,2,2,2,2,2,2,2,2,3,7,2,7,
+7,2,7,7,7,7,2,7,7,2,7,2,7,2,7,
+7,2,7,2,3,7,2,24,7,2,7,2,7,2,7,
+7,2,8,2,2,8,7,7,7,2,8,2,2,2,7,
+8,2,7,2,2,2,2,2,7,2,7,7,8,7,7,
+7,3,7,7,7,7,2,2,8,2,2,2,2,3,7,
+7,2,2,2,2,2,2,9,7,7,3,2,2,22,7,
+7,7,7,8,7,7,7,12,7,7,7,7,8,7,7
+</data>
+ </layer>
+ <objectgroup id="2" name="Encuentros y cosas">
+  <object id="1" name="Goblin Explorador" type="Encounter" x="160.269" y="97.402" width="31.148" height="29.508">
+   <properties>
+    <property name="enemy" value="goblin"/>
+   </properties>
+  </object>
+  <object id="6" name="Goblin Explorador" type="Encounter" x="159.191" y="416.625" width="31.148" height="29.508">
+   <properties>
+    <property name="enemy" value="goblin"/>
+   </properties>
+  </object>
+  <object id="8" name="Mago Novato del Gremio" type="Encounter" x="320.579" y="386.096" width="31.148" height="29.508">
+   <properties>
+    <property name="enemy" value="mago_novato"/>
+   </properties>
+  </object>
+  <object id="5" name="Trasgo Archivero" type="Encounter" x="288.298" y="226.226" width="31.148" height="29.508">
+   <properties>
+    <property name="enemy" value="trasgo"/>
+   </properties>
+  </object>
+  <object id="4" name="Jefe Goblin Alfa" type="Encounter" x="416.09" y="258.069" width="31.148" height="29.508">
+   <properties>
+    <property name="enemy" value="goblin_alpha"/>
+   </properties>
+  </object>
+  <object id="9" name="Jugador" type="Jugador" x="224.775" y="0.520679" width="30.968" height="31.4035"/>
+  <object id="10" name="Escaleras Salida" type="Stairs" x="224.982" y="449.44" width="31.843" height="29.6087"/>
+  <object id="20" name="Puerta Salida" type="Door" x="224.123" y="418.92" width="31.843" height="29.6087"/>
+  <object id="12" name="LLave" type="ItemKey" x="416.971" y="225.25" width="29.6608" height="29.231"/>
+  <object id="13" name="Trampa" type="Trap" x="224.391" y="193.87" width="29.6608" height="29.231"/>
+  <object id="14" name="Trampa" type="Trap" x="385.161" y="130.25" width="29.6608" height="29.231"/>
+  <object id="15" name="Cofre" type="Chest" x="384.731" y="100.589" width="29.6608" height="29.231"/>
+  <object id="16" name="Cofre" type="Chest" x="127.671" y="291.02" width="29.6608" height="29.231"/>
+  <object id="17" name="Cofre" type="Chest" x="416.971" y="387.31" width="29.6608" height="29.231"/>
+  <object id="18" name="Fuente" type="Fountain" x="352.921" y="226.11" width="29.6608" height="29.231"/>
+  <object id="19" name="Runa Arcana" type="Rune" x="34.3894" y="386.88" width="29.6608" height="29.231"/>
+ </objectgroup>
+</map>

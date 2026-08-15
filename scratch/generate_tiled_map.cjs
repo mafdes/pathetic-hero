@@ -55,12 +55,12 @@ const tiledMap = {
     {
       firstgid: 1,
       name: "dungeon_tiles",
-      image: "dungeon_tiles.jpg",
-      imagewidth: 512,
-      imageheight: 512,
+      image: "dungeon_tiles.png",
+      imagewidth: 256,
+      imageheight: 256,
       tilewidth: 32,
       tileheight: 32,
-      tilecount: 256,
+      tilecount: 64,
       columns: 8,
       margin: 0,
       spacing: 0

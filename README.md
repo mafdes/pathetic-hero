@@ -130,12 +130,13 @@ pathetic-hero/
 - Constitución, Fuerza, Agilidad, Inteligencia
 - Selección de clase (normal vs. absurda según puntuación)
 
-### V0.3 — RPG 2D 🗺️
-- Tilemap con mazmorra estilo Zelda (Arcade Physics)
-- Movimiento 4 direcciones + colisiones
-- Enemigos con pathfinding básico
-- Diálogos satíricos y comprobaciones de atributos
-- Cofres, llaves, combate directo
+---
+
+## 🗺️ Herramientas de Desarrollo y Mapas de Tiled
+
+- **Guía de Creación de Niveles:** [`TILED_MAPS_GUIDE.md`](TILED_MAPS_GUIDE.md)
+- **Visualizador Mágico de Tileset:** Abre [`tileset-viewer.html`](tileset-viewer.html) en el navegador para inspeccionar cada casilla de 32x32px.
+- **Tileset Oficial:** [`public/assets/tilesets/dungeon_tiles.png`](public/assets/tilesets/dungeon_tiles.png) (256x256 px PNG).
 
 ---
 
@@ -161,8 +162,10 @@ Púrpura mágico:  #7b2d8b
 
 ---
 
-## Créditos
+## Créditos y Atribuciones
 
-Basado en el prototipo [heroic-failure](../heroic-failure).
+- **Arte de Cofres y Monedas:** Jan Schneider ([jan-schneider.itch.io/chest-and-coins](https://jan-schneider.itch.io/chest-and-coins))
+- **Desarrollo y Diseño:** Pathetic Hero Team
+- **Prototipo Base:** [heroic-failure](../heroic-failure)
 
 *El fracaso no es una pantalla de error; es la esencia del juego.*

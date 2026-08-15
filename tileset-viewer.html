@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🗺️ Visualizador Mágico de Tileset — Pathetic Hero</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d0613;
+    color: #f0e6d3;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  #sidebar {
+    width: 320px;
+    min-width: 320px;
+    background: #1a0a2e;
+    border-right: 2px solid #3d2d54;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 14px;
+    overflow-y: auto;
+  }
+  #sidebar h1 {
+    font-size: 16px;
+    color: #d4a017;
+    text-align: center;
+    border-bottom: 2px solid #3d2d54;
+    padding-bottom: 10px;
+    letter-spacing: 0.5px;
+  }
+  .info-card {
+    background: #120722;
+    border: 2px solid #3d2d54;
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .info-card h2 {
+    font-size: 14px;
+    color: #f0c040;
+    margin-bottom: 4px;
+  }
+  .info-row {
+    font-size: 12px;
+    color: #c8a97a;
+    display: flex;
+    justify-content: space-between;
+  }
+  .info-val {
+    color: #ffffff;
+    font-weight: bold;
+  }
+  .layer-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+  }
+  .badge-suelo { background: #2d6a4f; color: #d8f3dc; }
+  .badge-paredes { background: #7b2d8b; color: #f3d8f3; }
+  .badge-objetos { background: #c42b1c; color: #fcd8d8; }
+
+  .tile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .tile-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: #140924;
+    border: 1px solid #3d2d54;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tile-item:hover {
+    border-color: #d4a017;
+    background: #251240;
+  }
+  .tile-item.active {
+    border-color: #f0c040;
+    background: #2d164d;
+    box-shadow: 0 0 8px rgba(212, 160, 23, 0.4);
+  }
+  .tile-preview-mini {
+    width: 32px;
+    height: 32px;
+    background-image: url('public/assets/tilesets/dungeon_tiles.png');
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    border: 1px solid #3d2d54;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .tile-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .tile-item-title {
+    font-size: 12px;
+    color: #f0e6d3;
+    font-weight: bold;
+  }
+  .tile-item-sub {
+    font-size: 10px;
+    color: #6a4e8a;
+  }
+
+  /* Main Viewport */
+  #main-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #07030b;
+    position: relative;
+    padding: 20px;
+    overflow: auto;
+  }
+  #tileset-container {
+    position: relative;
+    border: 3px solid #3d2d54;
+    border-radius: 6px;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.8);
+    background: repeating-conic-gradient(#150a26 0% 25%, #0e061a 0% 50%) 50% / 16px 16px;
+  }
+  #tileset-img {
+    display: block;
+    image-rendering: pixelated;
+    width: 512px; /* 2x scale for easy viewing */
+    height: 512px;
+  }
+  #grid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background-size: 64px 64px; /* 32px * 2 scale */
+    background-image:
+      linear-gradient(to right, rgba(212, 160, 23, 0.25) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(212, 160, 23, 0.25) 1px, transparent 1px);
+  }
+  #selection-box {
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    border: 3px solid #f0c040;
+    box-shadow: 0 0 12px #f0c040, inset 0 0 8px rgba(240, 192, 64, 0.4);
+    pointer-events: none;
+    transition: all 0.1s ease-out;
+    display: none;
+  }
+  .header-banner {
+    position: absolute;
+    top: 16px;
+    background: rgba(26, 10, 46, 0.9);
+    border: 1px solid #3d2d54;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #c8a97a;
+    backdrop-filter: blur(4px);
+  }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h1>✨ VISUALIZADOR DE TILESET</h1>
+
+  <div class="info-card">
+    <h2 id="card-title">Haz clic en un Tile</h2>
+    <div class="info-row"><span>ID en Tiled (GID):</span><span class="info-val" id="val-gid">-</span></div>
+    <div class="info-row"><span>Fila, Columna:</span><span class="info-val" id="val-pos">-</span></div>
+    <div class="info-row"><span>Capa Tiled:</span><span id="val-layer" class="layer-badge">-</span></div>
+    <p id="val-desc" style="font-size:11px; color:#a08cb8; margin-top:6px; line-height:1.4;">
+      Pasa el ratón o haz clic sobre cualquier casilla de la imagen para ver qué es y cómo usarla en Tiled.
+    </p>
+  </div>
+
+  <h2 style="font-size:12px; color:#6a4e8a;">📋 CATÁLOGO DE TILES (8x8)</h2>
+  <div class="tile-list" id="tile-list"></div>
+</div>
+
+<div id="main-view">
+  <div class="header-banner">💡 Pasa el ratón por la imagen para inspeccionar casillas · Haz clic para seleccionar</div>
+  <div id="tileset-container">
+    <img id="tileset-img" src="public/assets/tilesets/dungeon_tiles.png" alt="Tileset">
+    <div id="grid-overlay"></div>
+    <div id="selection-box"></div>
+  </div>
+</div>
+
+<script>
+const TILE_DATA = {
+  1:  { name: 'Vacío / Oscuridad', layer: 'Suelo', desc: 'Fondo negro para zonas fuera del mapa o vacías.' },
+  2:  { name: 'Suelo de Piedra Púrpura', layer: 'Suelo', desc: 'Suelo base principal de la mazmorra. Úsalo para rellenar los pasillos y salas.' },
+  3:  { name: 'Suelo Cripta Azul', layer: 'Suelo', desc: 'Variación de suelo oscuro para diferenciar salas especiales o niveles inferiores.' },
+  4:  { name: 'Suelo con Runa Grabada', layer: 'Suelo', desc: 'Baldosa decorativa con grabado arcano. Ideal para centros de habitación o altares.' },
+  5:  { name: 'Suelo Agrietado', layer: 'Suelo', desc: 'Baldosa rota. Añade variedad visual a salas antiguas.' },
+  6:  { name: 'Techo / Muro Superior', layer: 'Paredes', desc: 'Parte superior plana de los muros. Se coloca en la capa Paredes.' },
+  7:  { name: 'Pared de Ladrillos', layer: 'Paredes', desc: 'Frontal de muro con colisión física. Bloquea el paso del personaje.' },
+  8:  { name: 'Pared con Antorcha', layer: 'Paredes', desc: 'Muro decorado con antorcha de fuego brillante.' },
+
+  9:  { name: 'Puerta de Madera Cerrada', layer: 'Paredes', desc: 'Bloquea el paso hasta que el héroe recoja una llave en el mapa.' },
+  10: { name: 'Marco de Puerta Abierta', layer: 'Paredes', desc: 'Pasillo abierto o puerta desbloqueada.' },
+  11: { name: 'Escaleras Bajada (Salida)', layer: 'Objetos/Suelo', desc: 'Casilla de meta del nivel. Al pisarla, se completa la mazmorra.' },
+  12: { name: 'Escaleras Subida', layer: 'Suelo', desc: 'Punto de entrada o retorno de planta.' },
+  13: { name: 'Cofre de Tesoro Cerrado', layer: 'Objetos', desc: 'Otorga pociones de salud (+5 PV) al abrirlo.' },
+  14: { name: 'Cofre Abierto', layer: 'Suelo', desc: 'Cofre ya saqueado.' },
+  15: { name: 'Llave Dorada', layer: 'Objetos', desc: 'Objeto recogible. Necesario para abrir la puerta cerrada.' },
+  16: { name: 'Trampa de Cepo', layer: 'Objetos', desc: 'Exige prueba de Destreza. Si fallas, inflige daño (-3 PV).' },
+
+  17: { name: 'Fuente Mágica', layer: 'Objetos', desc: 'Restaura vida (+3 PV) al interactuar con ella.' },
+  18: { name: 'Runa de Sabiduría', layer: 'Objetos', desc: 'Prueba de Sabiduría. Curación si se descifra correctamente.' },
+  19: { name: 'Columna / Pilar', layer: 'Paredes', desc: 'Obstáculo vertical con colisión.' },
+  20: { name: 'Agua / Estanque', layer: 'Suelo', desc: 'Zona de agua infranqueable o decorativa.' },
+  21: { name: 'Alfombra Roja', layer: 'Suelo', desc: 'Piso de lujo para pasillos de salas de jefes.' },
+  22: { name: 'Barril de Madera', layer: 'Paredes', desc: 'Decoración / Obstáculo en el mapa.' },
+  23: { name: 'Caja de Madera', layer: 'Paredes', desc: 'Caja de suministros.' },
+  24: { name: 'Huesos de Esqueleto', layer: 'Suelo', desc: 'Decoración ambiental de mazmorra.' }
+};
+
+const TILE_SIZE_NATIVE = 32;
+const SCALE = 2; // Image display scale (64px in screen)
+const TILE_SIZE_DISPLAY = TILE_SIZE_NATIVE * SCALE;
+const COLS = 8;
+
+const container = document.getElementById('tileset-container');
+const img = document.getElementById('tileset-img');
+const selBox = document.getElementById('selection-box');
+const listContainer = document.getElementById('tile-list');
+
+// Populate tile list
+for (let gid = 1; gid <= 24; gid++) {
+  const info = TILE_DATA[gid] || { name: `Tile ${gid}`, layer: 'Suelo', desc: '' };
+  const col = (gid - 1) % COLS;
+  const row = Math.floor((gid - 1) / COLS);
+
+  const item = document.createElement('div');
+  item.className = 'tile-item';
+  item.dataset.gid = gid;
+
+  const layerClass = info.layer.includes('Suelo') ? 'badge-suelo' :
+                     info.layer.includes('Paredes') ? 'badge-paredes' : 'badge-objetos';
+
+  item.innerHTML = `
+    <div class="tile-preview-mini" style="background-position: -${col * 32}px -${row * 32}px;"></div>
+    <div class="tile-item-info">
+      <div class="tile-item-title">ID ${gid}: ${info.name}</div>
+      <div class="tile-item-sub"><span class="layer-badge ${layerClass}">${info.layer}</span></div>
+    </div>
+  `;
+
+  item.addEventListener('click', () => selectTile(gid));
+  listContainer.appendChild(item);
+}
+
+function selectTile(gid) {
+  const col = (gid - 1) % COLS;
+  const row = Math.floor((gid - 1) / COLS);
+
+  selBox.style.display = 'block';
+  selBox.style.left = (col * TILE_SIZE_DISPLAY) + 'px';
+  selBox.style.top = (row * TILE_SIZE_DISPLAY) + 'px';
+
+  const info = TILE_DATA[gid] || { name: `Tile ${gid}`, layer: 'General', desc: 'Casilla sin evento especial.' };
+
+  document.getElementById('card-title').textContent = `ID ${gid}: ${info.name}`;
+  document.getElementById('val-gid').textContent = gid;
+  document.getElementById('val-pos').textContent = `Col ${col + 1}, Fila ${row + 1}`;
+
+  const layerElem = document.getElementById('val-layer');
+  layerElem.textContent = info.layer;
+  layerElem.className = 'layer-badge ' + (
+    info.layer.includes('Suelo') ? 'badge-suelo' :
+    info.layer.includes('Paredes') ? 'badge-paredes' : 'badge-objetos'
+  );
+
+  document.getElementById('val-desc').textContent = info.desc;
+
+  document.querySelectorAll('.tile-item').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.gid) === gid);
+  });
+}
+
+container.addEventListener('mousemove', (e) => {
+  const rect = img.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  const col = Math.floor(x / TILE_SIZE_DISPLAY);
+  const row = Math.floor(y / TILE_SIZE_DISPLAY);
+
+  if (col >= 0 && col < COLS && row >= 0 && row < 8) {
+    const gid = (row * COLS) + col + 1;
+    selectTile(gid);
+  }
+});
+
+// Select default Tile 2
+selectTile(2);
+</script>
+</body>
+</html>

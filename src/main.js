@@ -22,6 +22,7 @@ import { HeroSummaryScene } from "./scenes/HeroSummaryScene.js";
 import { NameSelectionScene } from "./scenes/NameSelectionScene.js";
 import { MapScene } from "./scenes/MapScene.js";
 import { CombatScene } from "./scenes/CombatScene.js";
+import { CreditsScene } from "./scenes/CreditsScene.js";
 
 const BUILD_INFO = {
   version: "0.3.0",
@@ -72,6 +73,7 @@ const config = {
     NameSelectionScene,
     MapScene,
     CombatScene,
+    CreditsScene,
   ],
 };
 

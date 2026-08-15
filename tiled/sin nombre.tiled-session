@@ -1,31 +1,37 @@
 {
-    "activeFile": "nivel1.json",
+    "activeFile": "nivel1.tmx",
     "expandedProjectPaths": [
         "."
     ],
-    "file.lastUsedOpenFilter": "Todos los archivos (*)",
     "fileStates": {
-        "": {
-            "scaleInDock": 1
+        "dungeon_tiles.tsx": {
+            "scaleInDock": 1.5671,
+            "scaleInEditor": 1
         },
-        "nivel1.json": {
-            "scale": 0.7135,
-            "selectedLayer": 0,
+        "nivel1.tmx": {
+            "scale": 2.3263,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 375.6131744919411,
-                "y": 302.0322354590048
+                "x": 242.015217297855,
+                "y": 308.42969522417576
             }
-        },
-        "nivel1.json#dungeon_tiles": {
-            "scaleInDock": 1
         }
     },
-    "map.height": 16,
+    "last.exportedFilePath": "/Users/marcosfernandezsole/Documents/GitHub/pathetic-hero/public/assets/maps",
+    "last.imagePath": "/Users/marcosfernandezsole/Documents/GitHub/pathetic-hero/public/assets/tilesets",
+    "map.height": 15,
+    "map.lastUsedExportFilter": "JSON map files (*.tmj *.json)",
+    "map.lastUsedFormat": "tmx",
+    "map.width": 15,
     "openFiles": [
-        "nivel1.json"
+        "nivel1.tmx",
+        "dungeon_tiles.tsx"
     ],
     "project": "sin nombre.tiled-project",
     "recentFiles": [
+        "dungeon_tiles.tsx",
+        "nivel1.tmx",
         "nivel1.json"
-    ]
+    ],
+    "tileset.lastUsedFormat": "tsx"
 }
