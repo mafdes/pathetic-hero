@@ -1,108 +1,84 @@
-# 🗺️ Guía y Documentación de Mapas de Tiled — Pathetic Hero 🗡️
+# 🗺️ Guía Definitiva de Mapas de Tiled — Pathetic Hero 🗡️
 
-Este documento resume la arquitectura, la configuración de Tiled, el catálogo de assets y el flujo de trabajo para la creación de los **8 niveles de mazmorra** del juego.
-
----
-
-## 📌 1. Visión General y Plan de Progresión (8 Niveles)
-
-El juego utiliza **Phaser 4** con cámara **autocentrada en el personaje** (`this.cameras.main.startFollow`), lo que permite que los mapas crezcan progresivamente manteniendo el rendimiento y la fluidez.
-
-| Nivel | Nombre / Bioma | Tamaño (Tiles) | Estado |
-|---|---|---|---|
-| **Nivel 1** | Planta B1 — Sala de Iniciación | **15 × 15** | ✅ Creado y Jugable |
-| **Nivel 2** | Planta B2 — Archivos de la Cripta | **18 × 18** | 🔜 Próximo |
-| **Nivel 3** | Planta B3 — Pasillos Oscuros | **22 × 22** | 📅 Planificado |
-| **Nivel 4** | Planta B4 — Catacumbas de los Héroes | **25 × 25** | 📅 Planificado |
-| **Nivel 5** | Planta B5 — Laboratorio Abandonado | **30 × 20** | 📅 Planificado |
-| **Nivel 6** | Planta B6 — Prisión del Gremio | **35 × 25** | 📅 Planificado |
-| **Nivel 7** | Planta B7 — Ala Prohibida Arcana | **40 × 30** | 📅 Planificado |
-| **Nivel 8** | Planta B8 — Gran Mazmorra del Tribunal (Final) | **50 × 35** | 📅 Planificado |
+Documento de referencia para la creación y edición de los **8 niveles de mazmorra** en Tiled para *Pathetic Hero*.
 
 ---
 
-## 🎨 2. Especificación del Tileset (`dungeon_tiles.png`)
+## 📌 1. Visión General y Mapa de Niveles (8 Plantas)
+
+El juego utiliza **Phaser 4** con cámara **autocentrada en el personaje** (`this.cameras.main.startFollow`), lo que permite mapas de cualquier tamaño.
+
+| Nivel | Nombre / Bioma | Archivo TMX | Archivo JSON Exportado | Estado |
+|---|---|---|---|---|
+| **Nivel 1** | Planta B1 — Sala de Iniciación | `tiled/nivel1.tmx` | `public/assets/maps/nivel1.json` | ✅ Creado y Jugable |
+| **Nivel 2** | Planta B2 — Archivos de la Cripta | `tiled/nivel2.tmx` | `public/assets/maps/nivel2.json` | 🛠️ Listo para Diseñar |
+| **Nivel 3** | Planta B3 — Pasillos Oscuros | `tiled/nivel3.tmx` | `public/assets/maps/nivel3.json` | 🛠️ Listo para Diseñar |
+| **Nivel 4** | Planta B4 — Catacumbas de los Héroes | `tiled/nivel4.tmx` | `public/assets/maps/nivel4.json` | 🛠️ Listo para Diseñar |
+| **Nivel 5** | Planta B5 — Laboratorio Abandonado | `tiled/nivel5.tmx` | `public/assets/maps/nivel5.json` | 🛠️ Listo para Diseñar |
+| **Nivel 6** | Planta B6 — Prisión del Gremio | `tiled/nivel6.tmx` | `public/assets/maps/nivel6.json` | 🛠️ Listo para Diseñar |
+| **Nivel 7** | Planta B7 — Ala Prohibida Arcana | `tiled/nivel7.tmx` | `public/assets/maps/nivel7.json` | 🛠️ Listo para Diseñar |
+| **Nivel 8** | Planta B8 — Gran Mazmorra del Tribunal | `tiled/nivel8.tmx` | `public/assets/maps/nivel8.json` | 🛠️ Listo para Diseñar |
+
+---
+
+## 🎨 2. Regla del Tileset Unificado de 4 Filas (`dungeon_tiles.png`)
 
 * **Ubicación:** [`public/assets/tilesets/dungeon_tiles.png`](file:///Users/marcosfernandezsole/Documents/GitHub/pathetic-hero/public/assets/tilesets/dungeon_tiles.png)
-* **Dimensiones Totales:** `256 × 256` px
-* **Rejilla:** `8 × 8` casillas de **32 × 32 px** (Margen: `0`, Espaciado: `0`).
-* **Visualizador Interactivo:** Abre [`tileset-viewer.html`](file:///Users/marcosfernandezsole/Documents/GitHub/pathetic-hero/tileset-viewer.html) en el navegador para inspeccionar cada casilla.
+* **Dimensiones Totales:** `256 × 128` px (8 columnas × 4 filas = **32 casillas de 32x32 px**).
+* **Visualizador Interactivo:** Abre [`tileset-viewer.html`](file:///Users/marcosfernandezsole/Documents/GitHub/pathetic-hero/tileset-viewer.html) en tu navegador.
 
-### Catálogo de GIDs (Índices de casillas en Tiled):
-* **Suelos (TileLayer `Terreno`):**
-  * `GID 1`: Vacío / Oscuridad (Fondo)
-  * `GID 2`: Suelo de piedra púrpura estándar
-  * `GID 3`: Suelo de piedra azul/cripta
-  * `GID 4`: Suelo con grabado de runa
-  * `GID 5`: Suelo agrietado
-  * `GID 20`: Agua / Estanque
-  * `GID 21`: Alfombra roja real
-* **Paredes / Muros (TileLayer `Terreno` - Colisión Física):**
-  * `GID 6`: Techo / Parte superior plana de muro
-  * `GID 7`: Frente de pared de ladrillos
-  * `GID 8`: Pared de ladrillos con antorcha de fuego
-  * `GID 19`: Columna / Pilar de piedra
-  * `GID 22`: Barril de madera
-  * `GID 23`: Caja de madera
+### Regla de Colisión Súper Simple:
+* ⛔ **FILAS 1 Y 2 (GIDs 1 al 16): PAREDES Y OBSTÁCULOS (NO-PASO)**
+  * Cualquier tile pintado en estas dos filas **bloquea el paso del héroe automáticamente**.
+  * Incluye: Muros de ladrillo, antorchas, grietas, techos, columnas, estatuas, barriles, cajas, verjas, musgo, muros arcanos y lava.
+* ✅ **FILAS 3 Y 4 (GIDs 17 al 32): SUELOS Y CAMINOS (SÍ-PASO)**
+  * Cualquier tile pintado en estas dos filas **es camino libre transitable**.
+  * Incluye: Suelo de piedra púrpura principal, cripta azul, runas grabadas, alfombra roja, tablas de madera, marfil claro, musgo, escaleras, agua estática, ceniza y hielo.
 
 ---
 
-## 🛠️ 3. Reglas de Capas en Tiled
+## 📋 3. CHEAT SHEET DE OBJETOS INTERACTIVOS (Capa `Objetos`)
 
-Para mantener el proyecto hiper-limpio, usamos una separación clara entre terreno estático y objetos dinámicos:
+En Tiled, crea una capa de objetos llamada **`Objetos`** o **`Encuentros y cosas`**. Añade **rectángulos de 32 × 32 px** con las siguientes propiedades:
 
-### Capa 1: `Terreno` (Tile Layer - Pincel de texturas)
-* Aquí dibujas **solo** los bloques arquitectónicos estáticos: suelos, variaciones de baldosas, muros de piedra y antorchas.
-
-### Capa 2: `Objetos` / `Encuentros y cosas` (Object Group - Rectángulos)
-Aquí se colocan todos los rectángulos de **32 × 32 px** con sus tipos y nombres:
-
-| Objeto / Tipo (`Type / Class`) | Nombre (`Name`) | Propiedades adicionales | Función en Phaser |
+| Tipo (`Type` / `Class`) | Nombre (`Name`) | Propiedades personalizadas | Comportamiento en Juego |
 |---|---|---|---|
-| `PlayerSpawn` / `Jugador` | `Jugador` | — | Posición de aparición del héroe al iniciar el mapa. |
-| `Encounter` | Nombre del enemigo | `enemy` (string) = `"goblin"`, `"mago_novato"`, `"trasgo"`, `"goblin_alpha"` | Dispara el combate RPG contra enemigos. |
-| `ItemKey` | `Llave` | — | Llave recogible que va al inventario y desaparece. |
-| `Door` | `Puerta` | — | Puerta bloqueada que consume 1 llave para abrirse. |
-| `Chest` | `Cofre` | — | Cofre con poción de salud (+5 PV). |
-| `Trap` | `Trampa` | — | Trampa de cepo (Prueba de Destreza / -3 PV). |
-| `Fountain` | `Fuente` | — | Fuente bendita que restaura +3 PV. |
-| `Rune` | `Runa` | — | Runa mágica de prueba de Sabiduría. |
-| `Stairs` | `Escaleras Salida` | — | Escaleras de meta que completan el nivel. |
+| **`PlayerSpawn`** | `Jugador` | *(ninguna)* | Punto donde aparece el héroe al entrar al nivel. |
+| **`ItemKey`** | `LLave` | *(ninguna)* | Muestra el sprite de llave de Jan Schneider. Otorga +1 Llave al inventario. |
+| **`Door`** | `Puerta Salida` | *(ninguna)* | Puerta bloqueada. Requiere consumible de 1 Llave para abrirse. |
+| **`Chest`** | `Cofre` | *(ninguna)* | **Cofre Inteligente (Jan Schneider):** Botín dinámico. Si te falta Vida ➔ Poción (+5 PV). Si te falta Maná ➔ Elixir (+5 PM). Si estás lleno o al azar ➔ **+20 EXP**. |
+| **`Trap`** | `Trampa` | *(ninguna)* | Trampa de cepo. Prueba de Destreza (si fallas, sufres -3 PV). |
+| **`Stairs`** | `Escaleras Salida` | *(ninguna)* | Completa la planta de la mazmorra y **descansas recuperando el 100% de PV y PM**. |
 
 ---
 
-## 📁 4. Estructura de Archivos del Proyecto
+### ⚔️ Configuración de Enemigos (`Encounter`)
 
-```
-pathetic-hero/
-├── tileset-viewer.html            # Visualizador gráfico interactivo del tileset
-├── TILED_MAPS_GUIDE.md            # Esta documentación
-├── tiled/
-│   ├── dungeon_tiles.tsx          # Definición de Tileset en Tiled
-│   ├── nivel1.tmx                 # Archivo editable de Tiled para el Nivel 1
-│   └── nivel1.json                # Exportación JSON del Nivel 1
-├── public/
-│   └── assets/
-│       ├── tilesets/
-│       │   └── dungeon_tiles.png  # Spritesheet PNG 256x256 px (32x32 tiles)
-│       └── maps/
-│           └── nivel1.json        # Mapa cargado dinámicamente por Phaser
-└── src/
-    ├── scenes/
-    │   ├── PreloadScene.js        # Carga el spritesheet y el mapa JSON
-    │   └── MapScene.js            # Renderizado de mapa, niebla, objetos y cámara
-    └── data/
-        └── levels.js              # Catálogo de enemigos y stats de niveles
-```
+Para crear peleas, coloca un objeto de tipo **`Encounter`** con las siguientes propiedades personalizadas:
+
+#### 1. Enemigo Único:
+* **`Type`:** `Encounter`
+* **`Name`:** Nombre descriptivo (ej. `Goblin Explorador`)
+* **Propiedad personalizada (String):**
+  * `enemy = "goblin"` ➔ Goblin Explorador (`10 HP`, `15 EXP`)
+  * `enemy = "mago_novato"` ➔ Mago Novato (`8 HP`, `20 EXP`, débil a Físico)
+  * `enemy = "trasgo"` ➔ Trasgo Archivero (`14 HP`, `25 EXP`, débil a Hielo/Rayo)
+  * `enemy = "goblin_alpha"` ➔ Jefe Goblin Alfa (`22 HP`, `50 EXP`)
+
+#### 2. Encuentro Múltiple (2 o 3 Monstruos en Secuencia):
+* **`Type`:** `Encounter`
+* **Propiedades personalizadas:**
+  * `enemies = "goblin,mago_novato"` (string separado por comas)
+  * `count = 2` (entero)
+* *El juego mostrará un indicador con insignia roja (`x2` / `x3`) sobre el sprite en la mazmorra.*
 
 ---
 
-## 🔄 5. Flujo de Trabajo para Crear Nuevos Niveles (ej: Nivel 2)
+## 🔄 4. Flujo de Trabajo en Tiled
 
-1. **Abrir Tiled:** Crear nuevo mapa con orientación *Ortogonal*, *32x32 px* de tile, y dimensiones según el plan (ej. Nivel 2 = `18 x 18` tiles).
-2. **Asignar Tileset:** Cargar `dungeon_tiles.png` (Tile width: 32, Tile height: 32).
-3. **Pintar Terreno:** Usar la capa `Terreno` para suelos y muros.
-4. **Poner Objetos:** Usar la capa `Objetos` para colocar `PlayerSpawn`, `Encounter`, `ItemKey`, `Door`, `Chest` y `Stairs`.
-5. **Guardar y Exportar:**
-   * Guardar en `tiled/nivel2.tmx` (`Cmd + S`).
-   * Exportar JSON a `public/assets/maps/nivel2.json` (`Archivo -> Exportar como...`).
+1. **Abrir Tiled:** Abre cualquier nivel en `tiled/nivel1.tmx` hasta `tiled/nivel8.tmx`.
+2. **Pintar:** 
+   * Usa las **Filas 1-2** para Muros (No-Paso).
+   * Usa las **Filas 3-4** para Suelos (Sí-Paso).
+3. **Colocar Objetos:** Añade tus rectángulos de `Jugador`, `ItemKey`, `Door`, `Chest`, `Trap`, `Encounter` y `Stairs`.
+4. **Guardar (`Cmd + S`):** Tiled guardará el archivo `.tmx` y **exportará automáticamente el `.json` a `public/assets/maps/`**.

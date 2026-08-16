@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 import { COLORS, FONTS, SCENES, DEPTHS } from "../utils/constants.js";
 import { PlayerStats } from "../systems/PlayerStats.js";
 import { DialogBox } from "../ui/DialogBox.js";
+import { LevelUpModal } from "../ui/LevelUpModal.js";
 import { SaveManager } from "../systems/SaveManager.js";
 import { CharacterSheet } from "../systems/CharacterSheet.js";
 import { getLevel } from "../data/levels.js";
@@ -365,8 +366,8 @@ export class MapScene extends Phaser.Scene {
           const wx = this.offsetX + c * this.tileSize + this.tileSize / 2;
           const wy = this.offsetY + r * this.tileSize + this.tileSize / 2;
 
-          // Wall GIDs: 6 (roof), 7 (brick wall), 8 (torch wall), 19 (column), 22 (barrel), 23 (crate)
-          const isWall = [6, 7, 8, 19, 22, 23].includes(gid);
+          // Regla del Tileset Unificado: GIDs 1 a 16 (Filas 1 y 2) = PARED / OBSTÁCULO (NO-PASO)
+          const isWall = (gid >= 1 && gid <= 16);
 
           // Renderizar la textura exacta del tileset dibujada en Tiled (frame index = gid - 1)
           if (this.textures.exists('dungeon_tiles_sheet')) {
@@ -380,30 +381,6 @@ export class MapScene extends Phaser.Scene {
             this.grid[r][c] = { type: 'wall' };
           } else {
             if (!this.grid[r][c]) this.grid[r][c] = { type: 'floor' };
-          }
-
-          // Special Tiles GIDs (Entidades creadas por tiles especiales)
-          if (gid === 11) { // Escaleras
-            const sprite = this.add.image(wx, wy, 'entity-stairs');
-            this.entities[`${c},${r}`] = { type: 'stairs', sprite };
-          } else if (gid === 13) { // Cofre
-            const sprite = this.add.image(wx, wy, 'entity-chest');
-            this.entities[`${c},${r}`] = { type: 'chest', sprite };
-          } else if (gid === 15) { // Llave
-            const sprite = this.add.image(wx, wy, 'entity-key');
-            this.entities[`${c},${r}`] = { type: 'key', sprite };
-          } else if (gid === 9) { // Puerta
-            const sprite = this.add.image(wx, wy, 'entity-door');
-            this.entities[`${c},${r}`] = { type: 'door', sprite };
-          } else if (gid === 16) { // Trampa
-            const sprite = this.add.image(wx, wy, 'entity-trap');
-            this.entities[`${c},${r}`] = { type: 'trap', sprite };
-          } else if (gid === 17) { // Fuente
-            const sprite = this.add.image(wx, wy, 'entity-fountain');
-            this.entities[`${c},${r}`] = { type: 'fountain', sprite };
-          } else if (gid === 18) { // Runa
-            const sprite = this.add.image(wx, wy, 'entity-rune');
-            this.entities[`${c},${r}`] = { type: 'rune', sprite };
           }
         }
       }
@@ -426,6 +403,11 @@ export class MapScene extends Phaser.Scene {
         const wy = this.offsetY + r * this.tileSize + this.tileSize / 2;
 
         const isType = (t, n) => obj.type === t || (obj.name && obj.name.toLowerCase().includes(n.toLowerCase()));
+
+        // Asegurar que la casilla bajo cualquier objeto interactivo sea siempre transitable
+        if (this.grid[r] && this.grid[r][c]) {
+          this.grid[r][c] = { type: 'floor' };
+        }
 
         if (isType('PlayerSpawn', 'jugador')) {
           this.playerPos = { x: c, y: r };
@@ -576,14 +558,23 @@ export class MapScene extends Phaser.Scene {
     this.add.rectangle(cx, HH, W, 2, 0xd4a017, 1); // línea dorada separadora
 
     // Nombre del jugador (con ancho máximo para evitar solapamientos con PV)
-    this.add.text(20, 10, this.playerName.toUpperCase(), {
-      fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#f0c040", resolution: 2,
+    this.add.text(20, 8, this.playerName.toUpperCase(), {
+      fontFamily: FONTS.PRIMARY, fontSize: "15px", color: "#f0c040", resolution: 2,
       wordWrap: { width: W - 180 }
     });
 
-    // HP (esquina superior derecha)
-    this.hpText = this.add.text(W - 20, 10, `PV ${this.playerStats.currentHp}/${this.playerStats.maxHp}`, {
-      fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#4caf77", resolution: 2,
+    // Indicador de Nivel y EXP
+    this.expText = this.add.text(20, 26, `NIV ${this.playerStats.level} · ${this.playerStats.currentExp}/${this.playerStats.nextLevelExp} EXP`, {
+      fontFamily: FONTS.PRIMARY, fontSize: "11px", color: "#4caf77", resolution: 2,
+    });
+
+    // HP y MP (esquina superior derecha)
+    this.hpText = this.add.text(W - 20, 8, `PV ${this.playerStats.currentHp}/${this.playerStats.maxHp}`, {
+      fontFamily: FONTS.PRIMARY, fontSize: "13px", color: "#4caf77", resolution: 2,
+    }).setOrigin(1, 0);
+
+    this.mpText = this.add.text(W - 20, 26, `PM ${this.playerStats.currentMp}/${this.playerStats.maxMp}`, {
+      fontFamily: FONTS.PRIMARY, fontSize: "13px", color: "#7b68ee", resolution: 2,
     }).setOrigin(1, 0);
 
     // Nombre del nivel (fila 2, alineado a la izquierda)
@@ -683,7 +674,13 @@ export class MapScene extends Phaser.Scene {
 
   _updateUI() {
     if (this.hpText) {
-      this.hpText.setText(`PV: ${this.playerStats.currentHp}/${this.playerStats.maxHp}`);
+      this.hpText.setText(`PV ${this.playerStats.currentHp}/${this.playerStats.maxHp}`);
+    }
+    if (this.mpText) {
+      this.mpText.setText(`PM ${this.playerStats.currentMp}/${this.playerStats.maxMp}`);
+    }
+    if (this.expText) {
+      this.expText.setText(`NIV ${this.playerStats.level} · ${this.playerStats.currentExp}/${this.playerStats.nextLevelExp} EXP`);
     }
   }
 
@@ -850,51 +847,57 @@ export class MapScene extends Phaser.Scene {
     }
 
     if (ent.type === 'rune') {
-      const passed = this.playerStats.checkAttribute('wisdom', 12);
-      delete this.entities[`${c},${r}`];
-      if (ent.sprite) ent.sprite.destroy();
-
-      if (passed) {
-        this.playerStats.heal(3);
-        this._updateUI();
-        this._dialogBox.show("¡Descifras la runa y una brisa mágica te restaura 3 PV!", () => {
-          this._movePlayerTo(c, r);
-        }, "Runa de Sabiduría");
-      } else {
-        this.playerStats.takeDamage(2);
-        this._updateUI();
-        this._dialogBox.show("Un chispazo arcano te quema las pestañas (-2 PV).", () => {
-          this._movePlayerTo(c, r);
-        }, "Runa Fallida");
-      }
-      return;
-    }
-
-    if (ent.type === 'fountain') {
       SoundFx.playFountain();
-      const healed = this.playerStats.heal(3);
-      this._updateUI();
-
-      // Eliminar la entidad de la fuente para que se convierta en suelo libre
+      const restored = this.playerStats.restoreMp(5);
       delete this.entities[`${c},${r}`];
       if (ent.sprite) ent.sprite.destroy();
+      this._updateUI();
 
-      this._dialogBox.show(`Bebes agua pura de la fuente y recuperas ${healed} PV.`, () => {
+      this._dialogBox.show(`✨ Meditas ante la Runa Arcana y recuperas ${restored} PM de Maná.`, () => {
         this._movePlayerTo(c, r);
-      }, "Fuente de Agua");
+      }, "Santuario de Maná");
       return;
     }
 
-    if (ent.type === 'chest') {
+    if (ent.type === 'chest' || ent.type === 'fountain' || ent.type === 'rune') {
       SoundFx.playKey();
-      const healed = this.playerStats.heal(5);
-      this._updateUI();
-
-      // Eliminar la entidad del cofre para que se convierta en suelo libre
       delete this.entities[`${c},${r}`];
       if (ent.sprite) ent.sprite.destroy();
 
-      this._dialogBox.show(`¡Abres el cofre y encuentras una poción de sanación (+5 PV)!`, () => {
+      const missingHp = this.playerStats.currentHp < this.playerStats.maxHp;
+      const missingMp = this.playerStats.currentMp < this.playerStats.maxMp;
+
+      const options = [];
+      if (missingHp) options.push('hp');
+      if (missingMp) options.push('mp');
+      options.push('exp'); // Si está lleno o como tirada alternativa, da EXP!
+
+      const choice = options[Math.floor(Math.random() * options.length)];
+      let msg = "";
+
+      if (choice === 'hp') {
+        const healed = this.playerStats.heal(5);
+        this._updateUI();
+        msg = `📦 ¡Abres el cofre y encuentras una Poción de Sanación!\n\nRecuperas +${healed} PV de Vida.`;
+      } else if (choice === 'mp') {
+        const restored = this.playerStats.restoreMp(5);
+        this._updateUI();
+        msg = `📦 ¡Abres el cofre y encuentras un Elixir Arcano!\n\nRecuperas +${restored} PM de Maná.`;
+      } else {
+        const expGained = 20;
+        const res = this.playerStats.addExp(expGained);
+        this._updateUI();
+        msg = `📦 ¡Abres el cofre y encuentras un Tomo Antiguo del Gremio!\n\n¡Ganas +${expGained} EXP!`;
+
+        if (res.leveledUp || this.playerStats.attributePoints > 0) {
+          this._dialogBox.show(msg, () => {
+            new LevelUpModal(this, this.playerStats, () => this._movePlayerTo(c, r));
+          }, "Tesoro de Experiencia");
+          return;
+        }
+      }
+
+      this._dialogBox.show(msg, () => {
         this._movePlayerTo(c, r);
       }, "Cofre Tesoro");
       return;
@@ -902,12 +905,15 @@ export class MapScene extends Phaser.Scene {
 
     if (ent.type === 'stairs') {
       SoundFx.playVictory();
+      this.playerStats.fullRestore();
+      this._updateUI();
+
       this._dialogBox.show(
-        "¡HAS COMPLETADO LA MAZMORRA DE PRUEBA!\n\nEl Tribunal del Gremio asiente con cierta resignación por tu inesperada supervivencia.",
+        "¡HAS COMPLETADO LA MAZMORRA DE PRUEBA!\n\nDescansas tras la incursión: Vida (PV) y Maná (PM) restaurados al 100%.",
         () => {
           this.scene.start(SCENES.HERO_SUMMARY);
         },
-        "¡Victoria!"
+        "¡Nivel de Mazmorra Superado!"
       );
       return;
     }

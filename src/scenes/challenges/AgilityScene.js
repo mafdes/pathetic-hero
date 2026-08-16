@@ -11,13 +11,14 @@ import {
 import { DialogBox } from "../../ui/DialogBox.js";
 import { getVerdict } from "../../utils/helpers.js";
 
-const TOTAL_ROUNDS = 20;
+const TOTAL_ROUNDS = 6;
 
 const SABOTAGE_ANNOUNCEMENTS = {
-  2:  "Nivel 2. ¡Múltiples barriles!\nLos aprendices borrachos empujan varios toneles seguidos.",
-  5:  "Nivel 5. ¡Barriles con Drifting!\nLos toneles cambian de carril mientras caen por la rampa.",
-  8:  "Nivel 8. Avalancha del almacén norte.\nVelocidad aumentada y desvíos impredecibles.",
-  12: "Nivel 12. Caos en la bodega del Gremio.\nTodos los barriles mienten sobre su destino.",
+  2:  "Nivel 2. ¡Múltiples barriles!\nLos aprendices empujan 2 barriles dejando un solo carril seguro.",
+  3:  "Nivel 3. ¡Barriles con Drifting!\nLos toneles cambian de carril mientras caen por la rampa.",
+  4:  "Nivel 4. ¡Avalancha del almacén norte!\nVelocidad aumentada y desvíos impredecibles.",
+  5:  "Nivel 5. Caos en la bodega del Gremio.\nFrecuencia extrema de barriles y desvíos múltiples.",
+  6:  "Nivel 6. EVALUACIÓN FINAL DE AGILIDAD IMPOSIBLE.\nAvalancha total cubriendo todos los carriles.",
 };
 
 const FAIL_COMMENTS = [
@@ -33,11 +34,11 @@ export class AgilityScene extends Phaser.Scene {
   }
 
   init(data) {
-    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(19, Math.max(0, data.startLevel)) : 0;
+    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(5, Math.max(0, data.startLevel)) : 0;
     this._challenge     = data?.challenge ?? CHALLENGES.AGILITY;
     this._sheetData     = data?.sheet ?? null;
     this._currentLevel  = startLvl + 1;
-    this._maxLevels     = TOTAL_ROUNDS;
+    this._maxLevels     = 6;
     this._alive         = true;
     this._inCountdown   = true;
     this._score         = startLvl;
@@ -225,10 +226,18 @@ export class AgilityScene extends Phaser.Scene {
     if (!this._alive) return;
     const level = this._currentLevel;
 
-    const count = level === 1 ? 1 : level === 2 ? 2 : 3;
-    const stagger = Math.max(150, 450 - level * 15);
-    const dropDuration = Math.max(700, 1500 - level * 35);
-    const hasDrift = level >= 5;
+    if (level >= 6) {
+      // Nivel 6 IMPOSIBLE: Avalancha simultánea sobre los 3 carriles a la vez
+      for (let lane = 0; lane < 3; lane++) {
+        this._createBarrel(lane, lane, 450);
+      }
+      return;
+    }
+
+    const count = level === 1 ? 1 : 2;
+    const stagger = level === 1 ? 400 : Math.max(180, 420 - level * 40);
+    const dropDuration = level === 1 ? 1300 : level === 2 ? 1050 : level === 3 ? 880 : level === 4 ? 750 : 620;
+    const hasDrift = level >= 3;
 
     const lanes = [0, 1, 2].sort(() => Math.random() - 0.5);
 
@@ -325,13 +334,23 @@ export class AgilityScene extends Phaser.Scene {
     this._score = this._currentLevel;
 
     if (this._currentLevel >= this._maxLevels) {
-      this._endGame(true);
+      this._cheatDetected();
       return;
     }
 
     this._currentLevel++;
     this.cameras.main.flash(150, 240, 192, 64, true);
     this.time.delayedCall(300, () => this._beginLevel());
+  }
+
+  _cheatDetected() {
+    this._alive = false;
+    this._clearBarrels();
+    this._coverPanel.setVisible(true);
+    this._score = 5;
+
+    const msg = "¡TRAMPAS DETECTADAS!\n\nEl Gremio no tolera la suerte divina ni la alteración del destino. Tu puntuación queda fijada en 5 / 20.";
+    this._dialog.show(msg, () => this._returnToReport(5), "Tribunal del Gremio");
   }
 
   _failLevel() {

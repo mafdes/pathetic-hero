@@ -172,7 +172,7 @@ export class GuildReportScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(DEPTHS.UI);
     }
 
-    // ── Nivel de Inicio de Pruebas DEV (Stepper 0-19) ──────────────────────
+    // ── Nivel de Inicio de Pruebas DEV (Stepper 1-6) ──────────────────────
     if (this._debugStartLevel === undefined) this._debugStartLevel = 0;
 
     const levelBoxY = H - 165;
@@ -184,7 +184,7 @@ export class GuildReportScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#d4a017", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI).setInteractive({ useHandCursor: true });
 
-    const lvlText = this.add.text(cx + 85, levelBoxY, `LVL ${this._debugStartLevel}`, {
+    const lvlText = this.add.text(cx + 85, levelBoxY, `LVL ${this._debugStartLevel + 1}`, {
       fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#f0c040", resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 
@@ -194,12 +194,12 @@ export class GuildReportScene extends Phaser.Scene {
 
     minusBtn.on("pointerdown", () => {
       this._debugStartLevel = Math.max(0, this._debugStartLevel - 1);
-      lvlText.setText(`LVL ${this._debugStartLevel}`);
+      lvlText.setText(`LVL ${this._debugStartLevel + 1}`);
     });
 
     plusBtn.on("pointerdown", () => {
-      this._debugStartLevel = Math.min(19, this._debugStartLevel + 1);
-      lvlText.setText(`LVL ${this._debugStartLevel}`);
+      this._debugStartLevel = Math.min(5, this._debugStartLevel + 1);
+      lvlText.setText(`LVL ${this._debugStartLevel + 1}`);
     });
 
     // ── Botón Temporal de Autocompletado Aleatorio (DEV) ABAJO ──────────────
@@ -236,7 +236,7 @@ export class GuildReportScene extends Phaser.Scene {
 
   _fillRandomScores() {
     CHALLENGE_ORDER.forEach(id => {
-      this.sheet.attributes[id] = randInt(1, 6);
+      this.sheet.attributes[id] = randInt(1, 5);
     });
     SaveManager.save(this.sheet);
     this.scene.restart();

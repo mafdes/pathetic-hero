@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="15" height="15" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="22">
  <editorsettings>
-  <export target="../public/assets/maps/nivel1.json" format="json"/>
+  <export target="../public/assets/maps/nivel2.json" format="json"/>
  </editorsettings>
  <tileset firstgid="1" source="dungeon_tiles.tsx"/>
  <layer id="1" name="Terreno" width="15" height="15">

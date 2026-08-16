@@ -11,7 +11,7 @@ import {
 import { DialogBox } from "../../ui/DialogBox.js";
 import { getVerdict } from "../../utils/helpers.js";
 
-const TOTAL_ROUNDS = 20;
+const TOTAL_ROUNDS = 6;
 
 const RUNES = [
   { id: 0, name: "Sol",      color: 0xf59e0b, draw: (gfx) => { gfx.fillStyle(0xf59e0b, 1); gfx.fillCircle(0, 0, 20); gfx.lineStyle(4, 0xfcd34d); gfx.strokeCircle(0, 0, 32); } },
@@ -27,7 +27,7 @@ const SABOTAGE_ANNOUNCEMENTS = {
   3:  "Nivel 3. ¡SABOTAJE MEZCLA!\nLas baldosas cambiarán de posición tras la demostración.",
   4:  "Nivel 4. ¡SABOTAJE INVERSIÓN!\nRepite la secuencia AL REVÉS (del final al principio).",
   5:  "Nivel 5. ¡BALDOSAS BOCA ABAJO!\nLas runas se tapan como cartas ciegas cuando te toca pulsar.",
-  6:  "Nivel 6+. ¡CAOS ABSOLUTO DE ARCHIVO!\nTrampas rojas, mezcla, orden inverso y cartas a ciegas.",
+  6:  "Nivel 6. EVALUACIÓN FINAL DE SABIDURÍA IMPOSIBLE.\nEl Archivista genera una secuencia paradójica e irresoluble.",
 };
 
 const FAIL_COMMENTS = [
@@ -43,11 +43,11 @@ export class IntelligenceScene extends Phaser.Scene {
   }
 
   init(data) {
-    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(19, Math.max(0, data.startLevel)) : 0;
+    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(5, Math.max(0, data.startLevel)) : 0;
     this._challenge     = data?.challenge ?? CHALLENGES.WISDOM;
     this._sheetData     = data?.sheet ?? null;
     this._currentLevel  = startLvl + 1;
-    this._maxLevels     = TOTAL_ROUNDS;
+    this._maxLevels     = 6;
     this._alive         = true;
     this._inCountdown   = true;
     this._score         = startLvl;
@@ -215,7 +215,28 @@ export class IntelligenceScene extends Phaser.Scene {
 
   _startRuneSequence() {
     const level = this._currentLevel;
-    const len = Math.min(7, 3 + Math.floor((level - 1) / 3));
+
+    if (level >= 6) {
+      // Nivel 6 IMPOSIBLE: Secuencia de sólo trampas sin ninguna entrada válida posible (-1)
+      this._sequence = [
+        { runeId: 0, isTrap: true },
+        { runeId: 1, isTrap: true },
+        { runeId: 2, isTrap: true },
+      ];
+      this._expectedInput = [-1];
+      this._playerInput = [];
+      this._isShowing = true;
+      this._instructionText.setText("DEMOSTRACIÓN DE SECUENCIA IMPOSIBLE...");
+
+      this._playSequence(0, () => {
+        if (!this._alive) return;
+        this._isShowing = false;
+        this._instructionText.setText("¡RESUELVE LA PARADOJA SI PUEDES!");
+      });
+      return;
+    }
+
+    const len = Math.min(6, 3 + level - 1);
     const hasRedTraps = level >= 2;
     const isReverse   = level >= 4;
     const hideTiles   = level >= 5;
@@ -344,13 +365,22 @@ export class IntelligenceScene extends Phaser.Scene {
     this._score = this._currentLevel;
 
     if (this._currentLevel >= this._maxLevels) {
-      this._endGame(true);
+      this._cheatDetected();
       return;
     }
 
     this._currentLevel++;
     this.cameras.main.flash(150, 96, 165, 250, true);
     this.time.delayedCall(300, () => this._beginLevel());
+  }
+
+  _cheatDetected() {
+    this._alive = false;
+    this._coverPanel.setVisible(true);
+    this._score = 5;
+
+    const msg = "¡TRAMPAS DETECTADAS!\n\nEl Gremio no tolera la suerte divina ni la alteración del destino. Tu puntuación queda fijada en 5 / 20.";
+    this._dialog.show(msg, () => this._returnToReport(5), "Tribunal del Gremio");
   }
 
   _failLevel() {

@@ -28,10 +28,11 @@ const SUCCESS_COMMENTS = [
 ];
 
 const SABOTAGE_ANNOUNCEMENTS = {
-  3:  "Nivel 3. Indicador fantasma activado.\nFallo de calibración del prototipo. Ignore el magenta.",
-  5:  "Nivel 5. Parpadeo de calibración del equipo.\nCompletamente normal. No nos mire así.",
-  7:  "Nivel 7. Zonas de control señuelo adicionales.\nPor motivos de seguridad burocrática.",
-  10: "Nivel 10. Puede que la velocidad varíe.\nLa maquinaria es antigua. Presupuesto recortado.",
+  2: "Nivel 2. Indicador fantasma activado.\nFallo de calibración del prototipo. Ignore el magenta.",
+  3: "Nivel 3. La zona de control ha comenzado a desplazarse.\nMantenga la compostura.",
+  4: "Nivel 4. Parpadeo de calibración del equipo.\nCompletamente normal. No nos mire así.",
+  5: "Nivel 5. Máxima aceleración y señuelos.\nTensión extrema del Tribunal.",
+  6: "Nivel 6. EVALUACIÓN FINAL DE DESTREZA IMPOSIBLE.\nEl Tribunal garantiza que nadie supera esto.",
 };
 
 export class DexterityScene extends Phaser.Scene {
@@ -40,11 +41,11 @@ export class DexterityScene extends Phaser.Scene {
   }
 
   init(data) {
-    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(19, Math.max(0, data.startLevel)) : 0;
+    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(5, Math.max(0, data.startLevel)) : 0;
     this._challenge     = data?.challenge ?? CHALLENGES.DEXTERITY;
     this._sheetData     = data?.sheet ?? null;
     this._currentLevel  = startLvl + 1;
-    this._maxLevels     = 20;
+    this._maxLevels     = 6;
     this._alive         = true;
     this._inCountdown   = true;
     this._inputCooldown = false;
@@ -205,23 +206,100 @@ export class DexterityScene extends Phaser.Scene {
   }
 
   _getLevelConfig(level) {
-    const t    = (level - 1) / 19;
     const barW = this._barW;
 
-    return {
-      speed:              200 + t * 450,
-      goldWidth:          Math.max(34, Math.round(barW * 0.22 - t * barW * 0.12)),
-      hasDecoyIndicator:  level >= 3,
-      decoySpeed:         (220 + t * 400) * 1.2,
-      zoneMoving:         level >= 3,
-      zoneMoveAmp:        level >= 3 ? Math.min(barW * 0.06 + (level - 3) * barW * 0.012, barW * 0.26) : 0,
-      zoneMoveFreq:       level >= 3 ? 0.5 + (level - 3) * 0.06 : 0,
-      zoneBlink:          level >= 5,
-      blinkInterval:      level >= 5 ? Math.max(1200 - (level - 5) * 80, 500) : 0,
-      blinkDuration:      level >= 5 ? Math.min(250 + (level - 5) * 20, 500) : 0,
-      hasDecoys:          level >= 7,
-      speedBurst:         level >= 10,
-    };
+    if (level === 1) {
+      return {
+        speed: 180,
+        goldWidth: 110,
+        hasDecoyIndicator: false,
+        decoySpeed: 0,
+        zoneMoving: false,
+        zoneMoveAmp: 0,
+        zoneMoveFreq: 0,
+        zoneBlink: false,
+        blinkInterval: 0,
+        blinkDuration: 0,
+        hasDecoys: false,
+        speedBurst: false,
+      };
+    } else if (level === 2) {
+      return {
+        speed: 260,
+        goldWidth: 85,
+        hasDecoyIndicator: true, // 1ª trampa: cursor fantasma magenta
+        decoySpeed: 310,
+        zoneMoving: false,
+        zoneMoveAmp: 0,
+        zoneMoveFreq: 0,
+        zoneBlink: false,
+        blinkInterval: 0,
+        blinkDuration: 0,
+        hasDecoys: false,
+        speedBurst: false,
+      };
+    } else if (level === 3) {
+      return {
+        speed: 340,
+        goldWidth: 65,
+        hasDecoyIndicator: true,
+        decoySpeed: 400,
+        zoneMoving: true, // 2ª trampa: desplazamiento sinusoidal
+        zoneMoveAmp: barW * 0.18,
+        zoneMoveFreq: 0.8,
+        zoneBlink: false,
+        blinkInterval: 0,
+        blinkDuration: 0,
+        hasDecoys: false,
+        speedBurst: false,
+      };
+    } else if (level === 4) {
+      return {
+        speed: 420,
+        goldWidth: 48,
+        hasDecoyIndicator: true,
+        decoySpeed: 500,
+        zoneMoving: true,
+        zoneMoveAmp: barW * 0.22,
+        zoneMoveFreq: 1.1,
+        zoneBlink: true, // 3ª trampa: parpadeo intermitente
+        blinkInterval: 800,
+        blinkDuration: 350,
+        hasDecoys: false,
+        speedBurst: false,
+      };
+    } else if (level === 5) {
+      return {
+        speed: 520,
+        goldWidth: 32,
+        hasDecoyIndicator: true,
+        decoySpeed: 620,
+        zoneMoving: true,
+        zoneMoveAmp: barW * 0.25,
+        zoneMoveFreq: 1.4,
+        zoneBlink: true,
+        blinkInterval: 600,
+        blinkDuration: 400,
+        hasDecoys: true,
+        speedBurst: true,
+      };
+    } else {
+      // Nivel 6: Totalmente IMPOSIBLE (zona de 0px)
+      return {
+        speed: 1500,
+        goldWidth: 0,
+        hasDecoyIndicator: true,
+        decoySpeed: 1800,
+        zoneMoving: true,
+        zoneMoveAmp: barW * 0.35,
+        zoneMoveFreq: 3.0,
+        zoneBlink: true,
+        blinkInterval: 200,
+        blinkDuration: 600,
+        hasDecoys: true,
+        speedBurst: true,
+      };
+    }
   }
 
   _beginLevel() {
@@ -452,14 +530,23 @@ export class DexterityScene extends Phaser.Scene {
     this._score = this._currentLevel;
 
     if (this._currentLevel >= this._maxLevels) {
-      this._score = 20;
-      this._endGame(true);
+      this._cheatDetected();
       return;
     }
 
     this._currentLevel++;
     this.cameras.main.flash(150, 255, 255, 255, true);
     this.time.delayedCall(300, () => this._beginLevel());
+  }
+
+  _cheatDetected() {
+    this._alive = false;
+    this._clearLevelTimers();
+    this._coverPanel.setVisible(true);
+    this._score = 5;
+
+    const msg = "¡TRAMPAS DETECTADAS!\n\nEl Gremio no tolera la suerte divina ni la alteración del destino. Tu puntuación queda fijada en 5 / 20.";
+    this._dialog.show(msg, () => this._returnToReport(5), "Tribunal del Gremio");
   }
 
   _endGame(perfect = false) {

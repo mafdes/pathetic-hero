@@ -10,14 +10,14 @@ import {
 } from "../../utils/constants.js";
 import { DialogBox } from "../../ui/DialogBox.js";
 
-const TOTAL_ROUNDS = 20;
+const TOTAL_ROUNDS = 6;
 
 function roundConfig(roundIndex) {
   const level = roundIndex + 1;
   let zoneSize = 0.38;
-  let gravity = 0.32;
+  let gravity = 0.30;
   let impulse = 0.12;
-  let duration = 6.0 + level * 0.3;
+  let duration = 5.0 + level * 0.5;
   let isErratic = false;
   let moveZone = false;
   let blink = false;
@@ -25,38 +25,41 @@ function roundConfig(roundIndex) {
 
   if (level === 1) {
     zoneSize = 0.38;
-    gravity = 0.32;
+    gravity = 0.30;
     message = "Mantenga el pulso en la zona verde con toques acompasados.";
   } else if (level === 2) {
     zoneSize = 0.28;
     gravity = 0.42;
-    message = "Evaluación de resistencia biológica.";
+    isErratic = true; // 1ª trampa: oscilaciones erráticas
+    message = "Evaluación de resistencia biológica con arritmia.";
   } else if (level === 3) {
     zoneSize = 0.20;
     gravity = 0.54;
     isErratic = true;
-    message = "El pulso sufre alterations térmicas.";
+    moveZone = true; // 2ª trampa: desplazamiento de la zona verde
+    message = "El pulso sufre fluctuaciones térmicas y la zona se mueve.";
   } else if (level === 4) {
     zoneSize = 0.14;
     gravity = 0.68;
     isErratic = true;
     moveZone = true;
-    message = "La franja de salud se desplaza.";
+    blink = true; // 3ª trampa: parpadeo intermitente
+    message = "La franja de salud parpadea bajo la niebla médica.";
   } else if (level === 5) {
-    zoneSize = 0.095;
-    gravity = 0.82;
+    zoneSize = 0.08;
+    gravity = 0.85;
     isErratic = true;
     moveZone = true;
     blink = true;
-    message = "Niebla médica en los monitores del gremio.";
+    message = "Tensión médica extrema supervisada por el Agente.";
   } else {
-    const extra = level - 5;
-    zoneSize = Math.max(0.022, 0.075 - extra * 0.005);
-    gravity = 0.90 + extra * 0.12;
+    // Nivel 6: IMPOSIBLE (zona verde de 0px y alta gravedad)
+    zoneSize = 0;
+    gravity = 5.0;
     isErratic = true;
     moveZone = true;
     blink = true;
-    message = `Prueba de Resistencia Imposible — Nivel ${level}.`;
+    message = "Prueba de Resistencia Biológica Imposible del Gremio.";
   }
 
   return { level, zoneSize, gravity, impulse, duration, isErratic, moveZone, blink, message };
@@ -87,7 +90,7 @@ export class ConstitutionScene extends Phaser.Scene {
   }
 
   init(data) {
-    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(19, Math.max(0, data.startLevel)) : 0;
+    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(5, Math.max(0, data.startLevel)) : 0;
     this._challenge     = data?.challenge ?? CHALLENGES.CONSTITUTION;
     this._sheetData     = data?.sheet ?? null;
     this._currentLevel  = startLvl + 1;
@@ -354,7 +357,7 @@ export class ConstitutionScene extends Phaser.Scene {
     this._score = this._currentLevel;
 
     if (this._currentLevel >= this._maxLevels) {
-      this._endGame(true);
+      this._cheatDetected();
       return;
     }
 
@@ -363,6 +366,15 @@ export class ConstitutionScene extends Phaser.Scene {
     this.cameras.main.flash(150, 76, 175, 119, true);
 
     this._dialog.show(`"${phrase}"`, () => this._prepareLevel(), "Examinador Rotval");
+  }
+
+  _cheatDetected() {
+    this._alive = false;
+    this._coverPanel.setVisible(true);
+    this._score = 5;
+
+    const msg = "¡TRAMPAS DETECTADAS!\n\nEl Gremio no tolera la suerte divina ni la alteración del destino. Tu puntuación queda fijada en 5 / 20.";
+    this._dialog.show(msg, () => this._returnToReport(5), "Tribunal del Gremio");
   }
 
   _failLevel() {

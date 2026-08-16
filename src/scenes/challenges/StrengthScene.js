@@ -10,7 +10,7 @@ import {
 } from "../../utils/constants.js";
 import { DialogBox } from "../../ui/DialogBox.js";
 
-const TOTAL_ROUNDS = 20;
+const TOTAL_ROUNDS = 6;
 
 function roundConfig(roundIndex) {
   const level = roundIndex + 1;
@@ -23,38 +23,41 @@ function roundConfig(roundIndex) {
 
   if (level === 1) {
     zoneSize = 0.38;
-    baseSpeed = 0.52;
+    baseSpeed = 0.50;
     message = "La pesa de hierro ordinario. Mantén pulsado y suelta en la zona.";
   } else if (level === 2) {
     zoneSize = 0.26;
     baseSpeed = 0.82;
-    message = "Aumentando el pesaje para el expediente del gremio.";
+    isErratic = true; // 1ª trampa: fluctuación de velocidad
+    message = "Aumentando el pesaje con carga errática.";
   } else if (level === 3) {
     zoneSize = 0.16;
     baseSpeed = 1.20;
     isErratic = true;
-    message = "Pesaje con hierro encantado. Controle el impulso de carga.";
+    moveZone = true; // 2ª trampa: la zona de impacto se desplaza
+    message = "Pesaje con hierro encantado. La franja se desplaza.";
   } else if (level === 4) {
     zoneSize = 0.11;
     baseSpeed = 1.60;
     isErratic = true;
     moveZone = true;
-    message = "Evaluación de resistencia física avanzada. La franja se mueve.";
+    blink = true; // 3ª trampa: parpadeo intermitente
+    message = "Evaluación física avanzada. Parpadeo de calibración.";
   } else if (level === 5) {
-    zoneSize = 0.075;
-    baseSpeed = 2.05;
+    zoneSize = 0.07;
+    baseSpeed = 2.10;
     isErratic = true;
     moveZone = true;
     blink = true;
     message = "Tensión muscular extrema bajo supervisión de los Agentes.";
   } else {
-    const extra = level - 5;
-    zoneSize = Math.max(0.015, 0.058 - extra * 0.006);
-    baseSpeed = 2.35 + extra * 0.26;
+    // Nivel 6: IMPOSSIBLE (zona objetivo de 0px y velocidad extrema)
+    zoneSize = 0;
+    baseSpeed = 6.00;
     isErratic = true;
     moveZone = true;
     blink = true;
-    message = `Prueba de Titanes — Nivel ${level}.`;
+    message = "Prueba de Titanes Imposible del Gremio.";
   }
 
   return { level, zoneSize, baseSpeed, isErratic, moveZone, blink, message };
@@ -85,7 +88,7 @@ export class StrengthScene extends Phaser.Scene {
   }
 
   init(data) {
-    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(19, Math.max(0, data.startLevel)) : 0;
+    const startLvl = (data?.startLevel && typeof data.startLevel === 'number') ? Math.min(5, Math.max(0, data.startLevel)) : 0;
     this._challenge     = data?.challenge ?? CHALLENGES.STRENGTH;
     this._sheetData     = data?.sheet ?? null;
     this._currentLevel  = startLvl + 1;
@@ -337,7 +340,7 @@ export class StrengthScene extends Phaser.Scene {
     this._score = this._currentLevel;
 
     if (this._currentLevel >= this._maxLevels) {
-      this._endGame(true);
+      this._cheatDetected();
       return;
     }
 
@@ -346,6 +349,15 @@ export class StrengthScene extends Phaser.Scene {
     this.cameras.main.flash(150, 255, 68, 68, true);
 
     this._dialog.show(`"${phrase}"`, () => this._prepareLevel(), "Examinador Rotval");
+  }
+
+  _cheatDetected() {
+    this._alive = false;
+    this._coverPanel.setVisible(true);
+    this._score = 5;
+
+    const msg = "¡TRAMPAS DETECTADAS!\n\nEl Gremio no tolera la suerte divina ni la alteración del destino. Tu puntuación queda fijada en 5 / 20.";
+    this._dialog.show(msg, () => this._returnToReport(5), "Tribunal del Gremio");
   }
 
   _failLevel() {

@@ -172,7 +172,7 @@ export class MainMenuScene extends Phaser.Scene {
     let hasNonZero = Object.values(sheet.attributes).some(v => v !== null && v > 0);
     if (!hasNonZero) {
       Object.keys(sheet.attributes).forEach(k => {
-        sheet.attributes[k] = randInt(3, 6);
+        sheet.attributes[k] = randInt(1, 5);
       });
     }
     SaveManager.save(sheet);
@@ -189,10 +189,9 @@ export class MainMenuScene extends Phaser.Scene {
       sheet.name = generateHeroName();
     }
 
-    // Asegurar stats potentes para pruebas (4..8)
     Object.keys(sheet.attributes).forEach(k => {
       if (!sheet.attributes[k] || sheet.attributes[k] === 0) {
-        sheet.attributes[k] = randInt(4, 8);
+        sheet.attributes[k] = randInt(1, 5);
       }
     });
     SaveManager.save(sheet);

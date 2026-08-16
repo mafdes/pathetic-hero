@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🗺️ Visualizador Mágico de Tileset — Pathetic Hero</title>
+<title>🗺️ Centro de Diseño de Mapas — Pathetic Hero</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -11,14 +11,67 @@
     color: #f0e6d3;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
+    flex-direction: column;
     height: 100vh;
     overflow: hidden;
   }
 
-  /* Sidebar */
+  /* Top Navigation Bar */
+  #navbar {
+    height: 50px;
+    background: #150a26;
+    border-bottom: 2px solid #3d2d54;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+  }
+  #navbar .logo {
+    font-size: 16px;
+    font-weight: bold;
+    color: #d4a017;
+    letter-spacing: 0.5px;
+  }
+  .tabs {
+    display: flex;
+    gap: 10px;
+  }
+  .tab-btn {
+    background: #221038;
+    color: #c8a97a;
+    border: 1px solid #3d2d54;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover {
+    background: #321950;
+    color: #ffffff;
+  }
+  .tab-btn.active {
+    background: #f0c040;
+    color: #140824;
+    border-color: #f0c040;
+    box-shadow: 0 0 10px rgba(240, 192, 64, 0.4);
+  }
+
+  /* App Views */
+  .app-view {
+    flex: 1;
+    display: none;
+    height: calc(100vh - 50px);
+  }
+  .app-view.active {
+    display: flex;
+  }
+
+  /* VIEW 1: TILESET VIEWER */
   #sidebar {
-    width: 320px;
-    min-width: 320px;
+    width: 350px;
+    min-width: 350px;
     background: #1a0a2e;
     border-right: 2px solid #3d2d54;
     display: flex;
@@ -28,12 +81,11 @@
     overflow-y: auto;
   }
   #sidebar h1 {
-    font-size: 16px;
+    font-size: 15px;
     color: #d4a017;
     text-align: center;
     border-bottom: 2px solid #3d2d54;
     padding-bottom: 10px;
-    letter-spacing: 0.5px;
   }
   .info-card {
     background: #120722;
@@ -47,7 +99,6 @@
   .info-card h2 {
     font-size: 14px;
     color: #f0c040;
-    margin-bottom: 4px;
   }
   .info-row {
     font-size: 12px;
@@ -55,27 +106,23 @@
     display: flex;
     justify-content: space-between;
   }
-  .info-val {
-    color: #ffffff;
-    font-weight: bold;
-  }
+  .info-val { color: #ffffff; font-weight: bold; }
   .layer-badge {
     display: inline-block;
-    padding: 3px 8px;
+    padding: 4px 10px;
     border-radius: 4px;
     font-size: 11px;
     font-weight: bold;
     text-align: center;
   }
-  .badge-suelo { background: #2d6a4f; color: #d8f3dc; }
-  .badge-paredes { background: #7b2d8b; color: #f3d8f3; }
-  .badge-objetos { background: #c42b1c; color: #fcd8d8; }
+  .badge-nopaso { background: #c42b1c; color: #ffffff; }
+  .badge-sipaso { background: #2d6a4f; color: #d8f3dc; }
 
   .tile-list {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    max-height: 400px;
+    max-height: 440px;
     overflow-y: auto;
     padding-right: 4px;
   }
@@ -90,15 +137,8 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .tile-item:hover {
-    border-color: #d4a017;
-    background: #251240;
-  }
-  .tile-item.active {
-    border-color: #f0c040;
-    background: #2d164d;
-    box-shadow: 0 0 8px rgba(212, 160, 23, 0.4);
-  }
+  .tile-item:hover { border-color: #d4a017; background: #251240; }
+  .tile-item.active { border-color: #f0c040; background: #2d164d; }
   .tile-preview-mini {
     width: 32px;
     height: 32px;
@@ -109,22 +149,7 @@
     border-radius: 4px;
     flex-shrink: 0;
   }
-  .tile-item-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .tile-item-title {
-    font-size: 12px;
-    color: #f0e6d3;
-    font-weight: bold;
-  }
-  .tile-item-sub {
-    font-size: 10px;
-    color: #6a4e8a;
-  }
 
-  /* Main Viewport */
   #main-view {
     flex: 1;
     display: flex;
@@ -146,105 +171,345 @@
   #tileset-img {
     display: block;
     image-rendering: pixelated;
-    width: 512px; /* 2x scale for easy viewing */
-    height: 512px;
+    width: 512px; /* 2x scale */
+    height: 256px;
   }
   #grid-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     pointer-events: none;
-    background-size: 64px 64px; /* 32px * 2 scale */
+    background-size: 64px 64px;
     background-image:
       linear-gradient(to right, rgba(212, 160, 23, 0.25) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(212, 160, 23, 0.25) 1px, transparent 1px);
   }
   #selection-box {
     position: absolute;
-    width: 64px;
-    height: 64px;
+    width: 64px; height: 64px;
     border: 3px solid #f0c040;
-    box-shadow: 0 0 12px #f0c040, inset 0 0 8px rgba(240, 192, 64, 0.4);
+    box-shadow: 0 0 12px #f0c040;
     pointer-events: none;
-    transition: all 0.1s ease-out;
     display: none;
   }
   .header-banner {
-    position: absolute;
-    top: 16px;
+    position: absolute; top: 16px;
     background: rgba(26, 10, 46, 0.9);
     border: 1px solid #3d2d54;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 13px;
+    padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; color: #c8a97a;
+  }
+
+  /* VIEW 2: OBJECT CHEAT SHEET */
+  #cheatsheet-view {
+    flex: 1;
+    background: #090410;
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .section-title {
+    font-size: 18px;
+    color: #d4a017;
+    border-bottom: 2px solid #3d2d54;
+    padding-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .cheat-card {
+    background: #150a26;
+    border: 2px solid #3d2d54;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .cheat-card:hover {
+    transform: translateY(-2px);
+    border-color: #d4a017;
+  }
+  .cheat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cheat-card-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #f0c040;
+  }
+  .cheat-tag {
+    background: #2a144a;
+    color: #b388ff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .prop-list {
+    background: #0d0614;
+    border: 1px solid #2a1a40;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #795548;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .prop-item { color: #4caf77; }
+  .prop-key { color: #f0c040; }
+  .prop-val { color: #f0e6d3; }
+  .cheat-desc {
+    font-size: 12px;
     color: #c8a97a;
-    backdrop-filter: blur(4px);
+    line-height: 1.4;
   }
 </style>
 </head>
 <body>
 
-<div id="sidebar">
-  <h1>✨ VISUALIZADOR DE TILESET</h1>
-
-  <div class="info-card">
-    <h2 id="card-title">Haz clic en un Tile</h2>
-    <div class="info-row"><span>ID en Tiled (GID):</span><span class="info-val" id="val-gid">-</span></div>
-    <div class="info-row"><span>Fila, Columna:</span><span class="info-val" id="val-pos">-</span></div>
-    <div class="info-row"><span>Capa Tiled:</span><span id="val-layer" class="layer-badge">-</span></div>
-    <p id="val-desc" style="font-size:11px; color:#a08cb8; margin-top:6px; line-height:1.4;">
-      Pasa el ratón o haz clic sobre cualquier casilla de la imagen para ver qué es y cómo usarla en Tiled.
-    </p>
+<div id="navbar">
+  <div class="logo">🗺️ PAThetic HERO — CENTRO DE DISEÑO DE MAPAS</div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('view-tileset')">🗺️ Tileset de Terreno (4 Filas)</button>
+    <button class="tab-btn" onclick="switchTab('view-cheatsheet')">📋 Cheat Sheet de Objetos y Enemigos</button>
   </div>
-
-  <h2 style="font-size:12px; color:#6a4e8a;">📋 CATÁLOGO DE TILES (8x8)</h2>
-  <div class="tile-list" id="tile-list"></div>
 </div>
 
-<div id="main-view">
-  <div class="header-banner">💡 Pasa el ratón por la imagen para inspeccionar casillas · Haz clic para seleccionar</div>
-  <div id="tileset-container">
-    <img id="tileset-img" src="public/assets/tilesets/dungeon_tiles.png" alt="Tileset">
-    <div id="grid-overlay"></div>
-    <div id="selection-box"></div>
+<!-- VISTA 1: TILESET VIEWER -->
+<div id="view-tileset" class="app-view active">
+  <div id="sidebar">
+    <h1>✨ TILESET UNIFICADO (4 FILAS)</h1>
+    <div class="info-card">
+      <h2 id="card-title">Selecciona un Tile</h2>
+      <div class="info-row"><span>ID en Tiled (GID):</span><span class="info-val" id="val-gid">-</span></div>
+      <div class="info-row"><span>Fila, Columna:</span><span class="info-val" id="val-pos">-</span></div>
+      <div class="info-row"><span>Regla de Juego:</span><span id="val-layer" class="layer-badge">-</span></div>
+      <p id="val-desc" style="font-size:11px; color:#a08cb8; margin-top:6px; line-height:1.4;"></p>
+    </div>
+    <h2 style="font-size:12px; color:#6a4e8a;">📋 CATÁLOGO DE TILES (32 TILES)</h2>
+    <div class="tile-list" id="tile-list"></div>
+  </div>
+
+  <div id="main-view">
+    <div class="header-banner">🛑 Filas 1 y 2 = NO-PASO (Paredes) · 🟢 Filas 3 y 4 = SÍ-PASO (Suelos)</div>
+    <div id="tileset-container">
+      <img id="tileset-img" src="public/assets/tilesets/dungeon_tiles.png" alt="Tileset">
+      <div id="grid-overlay"></div>
+      <div id="selection-box"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VISTA 2: CHEAT SHEET DE OBJETOS Y ENEMIGOS -->
+<div id="view-cheatsheet" class="app-view">
+  <div id="cheatsheet-view">
+    
+    <!-- SECCIÓN 1: OBJETOS INTERACTIVOS -->
+    <div class="section-title">🎁 OBJETOS INTERACTIVOS (Capa 'Objetos' en Tiled)</div>
+    <div class="cards-grid">
+      
+      <div class="cheat-card">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">📍 Aparición del Héroe</div>
+          <div class="cheat-tag">Type: PlayerSpawn</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">PlayerSpawn</span></div>
+          <div><span class="prop-key">Name:</span> <span class="prop-val">Jugador</span></div>
+        </div>
+        <div class="cheat-desc">Define el punto inicial exacto donde aparece el héroe al entrar en esta planta de la mazmorra.</div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">📦 Cofre Inteligente</div>
+          <div class="cheat-tag">Type: Chest</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">Chest</span></div>
+          <div><span class="prop-key">Name:</span> <span class="prop-val">Cofre</span></div>
+        </div>
+        <div class="cheat-desc"><strong>Botín Dinámico:</strong> Da Vida (+5 PV) si te falta vida, Maná (+5 PM) si te falta maná, o <strong>+20 EXP (Tomo Antiguo)</strong> si estás al 100%. Muestra sprite de Jan Schneider.</div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">🗝️ Llave del Ala</div>
+          <div class="cheat-tag">Type: ItemKey</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">ItemKey</span></div>
+          <div><span class="prop-key">Name:</span> <span class="prop-val">LLave</span></div>
+        </div>
+        <div class="cheat-desc">Llave recogible de Jan Schneider. Otorga +1 Llave al inventario para abrir la puerta bloqueada.</div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">🚪 Puerta Bloqueada</div>
+          <div class="cheat-tag">Type: Door</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">Door</span></div>
+          <div><span class="prop-key">Name:</span> <span class="prop-val">Puerta Salida</span></div>
+        </div>
+        <div class="cheat-desc">Bloquea el paso hacia las escaleras de salida hasta que el jugador posee 1 Llave en su inventario.</div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">⚙️ Trampa de Cepo</div>
+          <div class="cheat-tag">Type: Trap</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">Trap</span></div>
+          <div><span class="prop-key">Name:</span> <span class="prop-val">Trampa</span></div>
+        </div>
+        <div class="cheat-desc">Trampa oculta. Realiza tirada de Destreza. Si la fallas, sufres -3 PV de daño.</div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">🏰 Escaleras de Salida</div>
+          <div class="cheat-tag">Type: Stairs</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">Stairs</span></div>
+          <div><span class="prop-key">Name:</span> <span class="prop-val">Escaleras Salida</span></div>
+        </div>
+        <div class="cheat-desc"><strong>Descanso de Planta:</strong> Completa el nivel y <strong>restaura Vida (PV) y Maná (PM) al 100%</strong>.</div>
+      </div>
+
+    </div>
+
+    <!-- SECCIÓN 2: COMBATES Y MONSTRUOS -->
+    <div class="section-title">⚔️ ENEMIGOS Y COMBATES (Type: Encounter)</div>
+    <div class="cards-grid">
+
+      <div class="cheat-card">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">🟢 Goblin Explorador</div>
+          <div class="cheat-tag">enemy = goblin</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">Encounter</span></div>
+          <div><span class="prop-key">Propiedad (string):</span> <span class="prop-val">enemy = "goblin"</span></div>
+        </div>
+        <div class="cheat-desc"><strong>Stats:</strong> 10 HP · 3 ATK · <strong>15 EXP (¡Nivel 2 directo!)</strong>.<br><strong>Vulnerabilidades:</strong> Débil a Físico y Fuego (1.6x).</div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">🧙 Mago Novato</div>
+          <div class="cheat-tag">enemy = mago_novato</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">Encounter</span></div>
+          <div><span class="prop-key">Propiedad (string):</span> <span class="prop-val">enemy = "mago_novato"</span></div>
+        </div>
+        <div class="cheat-desc"><strong>Stats:</strong> 8 HP · 4 ATK · <strong>20 EXP</strong>.<br><strong>Vulnerabilidades:</strong> Muy débil a Físico (1.8x). Resistente a Magia.</div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">👹 Trasgo Archivero</div>
+          <div class="cheat-tag">enemy = trasgo</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">Encounter</span></div>
+          <div><span class="prop-key">Propiedad (string):</span> <span class="prop-val">enemy = "trasgo"</span></div>
+        </div>
+        <div class="cheat-desc"><strong>Stats:</strong> 14 HP · 5 ATK · <strong>25 EXP</strong>.<br><strong>Vulnerabilidades:</strong> Débil a Hielo (1.6x) y Rayo (1.6x). Armadura física.</div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">👑 Jefe Goblin Alfa</div>
+          <div class="cheat-tag">enemy = goblin_alpha</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">Encounter</span></div>
+          <div><span class="prop-key">Propiedad (string):</span> <span class="prop-val">enemy = "goblin_alpha"</span></div>
+        </div>
+        <div class="cheat-desc"><strong>Stats:</strong> 22 HP · 7 ATK · <strong>50 EXP</strong>.<br><strong>Vulnerabilidades:</strong> Débil a Fuego (1.6x) y Rayo (1.6x).</div>
+      </div>
+
+      <div class="cheat-card" style="grid-column: span 2;">
+        <div class="cheat-card-header">
+          <div class="cheat-card-title">🔥 Encuentros Múltiples (2 o 3 Enemigos)</div>
+          <div class="cheat-tag">enemies + count</div>
+        </div>
+        <div class="prop-list">
+          <div><span class="prop-key">Type:</span> <span class="prop-val">Encounter</span></div>
+          <div><span class="prop-key">Propiedad (string):</span> <span class="prop-val">enemies = "goblin,mago_novato"</span></div>
+          <div><span class="prop-key">Propiedad (int):</span> <span class="prop-val">count = 2</span></div>
+        </div>
+        <div class="cheat-desc">Combate en oleada contra 2 o 3 enemigos seguidos. El juego mostrará un indicador <span style="color:#ff4444; font-weight:bold;">x2 / x3</span> sobre el sprite.</div>
+      </div>
+
+    </div>
+
   </div>
 </div>
 
 <script>
+function switchTab(viewId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.app-view').forEach(view => view.classList.remove('active'));
+
+  event.target.classList.add('active');
+  document.getElementById(viewId).classList.add('active');
+}
+
 const TILE_DATA = {
-  1:  { name: 'Vacío / Oscuridad', layer: 'Suelo', desc: 'Fondo negro para zonas fuera del mapa o vacías.' },
-  2:  { name: 'Suelo de Piedra Púrpura', layer: 'Suelo', desc: 'Suelo base principal de la mazmorra. Úsalo para rellenar los pasillos y salas.' },
-  3:  { name: 'Suelo Cripta Azul', layer: 'Suelo', desc: 'Variación de suelo oscuro para diferenciar salas especiales o niveles inferiores.' },
-  4:  { name: 'Suelo con Runa Grabada', layer: 'Suelo', desc: 'Baldosa decorativa con grabado arcano. Ideal para centros de habitación o altares.' },
-  5:  { name: 'Suelo Agrietado', layer: 'Suelo', desc: 'Baldosa rota. Añade variedad visual a salas antiguas.' },
-  6:  { name: 'Techo / Muro Superior', layer: 'Paredes', desc: 'Parte superior plana de los muros. Se coloca en la capa Paredes.' },
-  7:  { name: 'Pared de Ladrillos', layer: 'Paredes', desc: 'Frontal de muro con colisión física. Bloquea el paso del personaje.' },
-  8:  { name: 'Pared con Antorcha', layer: 'Paredes', desc: 'Muro decorado con antorcha de fuego brillante.' },
+  1:  { name: 'Vacío / Oscuridad', pass: false, desc: 'Fondo negro. Bloquea el paso.' },
+  2:  { name: 'Techo / Muro Superior', pass: false, desc: 'Parte superior plana de muro. Bloquea el paso.' },
+  3:  { name: 'Pared de Ladrillos Púrpura', pass: false, desc: 'Pared frontal sólida. Bloquea el paso.' },
+  4:  { name: 'Pared con Antorcha', pass: false, desc: 'Muro con antorcha encendida. Bloquea el paso.' },
+  5:  { name: 'Pared Agrietada', pass: false, desc: 'Muro deteriorado. Bloquea el paso.' },
+  6:  { name: 'Borde Muro Izquierda', pass: false, desc: 'Esquina / Borde de pared. Bloquea el paso.' },
+  7:  { name: 'Borde Muro Derecha', pass: false, desc: 'Esquina / Borde de pared. Bloquea el paso.' },
+  8:  { name: 'Pared Cripta Azul', pass: false, desc: 'Pared de cripta oscura. Bloquea el paso.' },
+  9:  { name: 'Columna de Piedra', pass: false, desc: 'Pilar vertical obstáculo. Bloquea el paso.' },
+  10: { name: 'Estatua de Piedra', pass: false, desc: 'Estatua decorativa. Bloquea el paso.' },
+  11: { name: 'Barril de Madera', pass: false, desc: 'Barril fijo obstáculo. Bloquea el paso.' },
+  12: { name: 'Caja de Madera', pass: false, desc: 'Caja de suministros fija. Bloquea el paso.' },
+  13: { name: 'Verja / Barandilla', pass: false, desc: 'Reja de hierro. Bloquea el paso.' },
+  14: { name: 'Pared Verde Musgo', pass: false, desc: 'Muro de bosque / musgo. Bloquea el paso.' },
+  15: { name: 'Pared Arcana Morada', pass: false, desc: 'Muro mágico. Bloquea el paso.' },
+  16: { name: 'Muro de Lava / Roca', pass: false, desc: 'Pared de roca volcánica. Bloquea el paso.' },
 
-  9:  { name: 'Puerta de Madera Cerrada', layer: 'Paredes', desc: 'Bloquea el paso hasta que el héroe recoja una llave en el mapa.' },
-  10: { name: 'Marco de Puerta Abierta', layer: 'Paredes', desc: 'Pasillo abierto o puerta desbloqueada.' },
-  11: { name: 'Escaleras Bajada (Salida)', layer: 'Objetos/Suelo', desc: 'Casilla de meta del nivel. Al pisarla, se completa la mazmorra.' },
-  12: { name: 'Escaleras Subida', layer: 'Suelo', desc: 'Punto de entrada o retorno de planta.' },
-  13: { name: 'Cofre de Tesoro Cerrado', layer: 'Objetos', desc: 'Otorga pociones de salud (+5 PV) al abrirlo.' },
-  14: { name: 'Cofre Abierto', layer: 'Suelo', desc: 'Cofre ya saqueado.' },
-  15: { name: 'Llave Dorada', layer: 'Objetos', desc: 'Objeto recogible. Necesario para abrir la puerta cerrada.' },
-  16: { name: 'Trampa de Cepo', layer: 'Objetos', desc: 'Exige prueba de Destreza. Si fallas, inflige daño (-3 PV).' },
-
-  17: { name: 'Fuente Mágica', layer: 'Objetos', desc: 'Restaura vida (+3 PV) al interactuar con ella.' },
-  18: { name: 'Runa de Sabiduría', layer: 'Objetos', desc: 'Prueba de Sabiduría. Curación si se descifra correctamente.' },
-  19: { name: 'Columna / Pilar', layer: 'Paredes', desc: 'Obstáculo vertical con colisión.' },
-  20: { name: 'Agua / Estanque', layer: 'Suelo', desc: 'Zona de agua infranqueable o decorativa.' },
-  21: { name: 'Alfombra Roja', layer: 'Suelo', desc: 'Piso de lujo para pasillos de salas de jefes.' },
-  22: { name: 'Barril de Madera', layer: 'Paredes', desc: 'Decoración / Obstáculo en el mapa.' },
-  23: { name: 'Caja de Madera', layer: 'Paredes', desc: 'Caja de suministros.' },
-  24: { name: 'Huesos de Esqueleto', layer: 'Suelo', desc: 'Decoración ambiental de mazmorra.' }
+  17: { name: 'Suelo Piedra Púrpura (Principal)', pass: true, desc: 'Suelo base estándar. Paso totalmente libre.' },
+  18: { name: 'Suelo Cripta Azul', pass: true, desc: 'Suelo oscuro para salas o criptas. Paso libre.' },
+  19: { name: 'Suelo con Runa Grabada', pass: true, desc: 'Baldosa mística decorativa. Paso libre.' },
+  20: { name: 'Suelo Agrietado', pass: true, desc: 'Baldosa deteriorada. Paso libre.' },
+  21: { name: 'Alfombra Roja Real', pass: true, desc: 'Piso elegante para salas de jefes. Paso libre.' },
+  22: { name: 'Suelo de Madera', pass: true, desc: 'Tablas de madera. Paso libre.' },
+  23: { name: 'Suelo Claro / Marfil', pass: true, desc: 'Baldosa clara decorativa. Paso libre.' },
+  24: { name: 'Suelo con Musgo', pass: true, desc: 'Suelo natural con vegetación. Paso libre.' },
+  25: { name: 'Escaleras Bajada', pass: true, desc: 'Escaleras de salida. Al pisarlas se completa el nivel.' },
+  26: { name: 'Escaleras Subida', pass: true, desc: 'Escaleras de entrada. Paso libre.' },
+  27: { name: 'Agua / Estanque', pass: true, desc: 'Agua limpia. Paso libre.' },
+  28: { name: 'Huesos Decorativos', pass: true, desc: 'Restos en el suelo. Paso libre.' },
+  29: { name: 'Suelo Baldosa Enjaulada', pass: true, desc: 'Piso metálico. Paso libre.' },
+  30: { name: 'Suelo Volcánico / Ceniza', pass: true, desc: 'Tierra quemada. Paso libre.' },
+  31: { name: 'Caminito de Piedras', pass: true, desc: 'Sendero de piedras sueltas. Paso libre.' },
+  32: { name: 'Suelo de Hielo / Cristal', pass: true, desc: 'Piso brillante de cristal. Paso libre.' }
 };
 
-const TILE_SIZE_NATIVE = 32;
-const SCALE = 2; // Image display scale (64px in screen)
-const TILE_SIZE_DISPLAY = TILE_SIZE_NATIVE * SCALE;
+const TILE_SIZE_DISPLAY = 64;
 const COLS = 8;
 
 const container = document.getElementById('tileset-container');
@@ -252,9 +517,8 @@ const img = document.getElementById('tileset-img');
 const selBox = document.getElementById('selection-box');
 const listContainer = document.getElementById('tile-list');
 
-// Populate tile list
-for (let gid = 1; gid <= 24; gid++) {
-  const info = TILE_DATA[gid] || { name: `Tile ${gid}`, layer: 'Suelo', desc: '' };
+for (let gid = 1; gid <= 32; gid++) {
+  const info = TILE_DATA[gid];
   const col = (gid - 1) % COLS;
   const row = Math.floor((gid - 1) / COLS);
 
@@ -262,14 +526,14 @@ for (let gid = 1; gid <= 24; gid++) {
   item.className = 'tile-item';
   item.dataset.gid = gid;
 
-  const layerClass = info.layer.includes('Suelo') ? 'badge-suelo' :
-                     info.layer.includes('Paredes') ? 'badge-paredes' : 'badge-objetos';
+  const badgeClass = info.pass ? 'badge-sipaso' : 'badge-nopaso';
+  const badgeText = info.pass ? '✅ SÍ-PASO' : '⛔ NO-PASO';
 
   item.innerHTML = `
     <div class="tile-preview-mini" style="background-position: -${col * 32}px -${row * 32}px;"></div>
     <div class="tile-item-info">
       <div class="tile-item-title">ID ${gid}: ${info.name}</div>
-      <div class="tile-item-sub"><span class="layer-badge ${layerClass}">${info.layer}</span></div>
+      <div><span class="layer-badge ${badgeClass}">${badgeText}</span></div>
     </div>
   `;
 
@@ -285,18 +549,15 @@ function selectTile(gid) {
   selBox.style.left = (col * TILE_SIZE_DISPLAY) + 'px';
   selBox.style.top = (row * TILE_SIZE_DISPLAY) + 'px';
 
-  const info = TILE_DATA[gid] || { name: `Tile ${gid}`, layer: 'General', desc: 'Casilla sin evento especial.' };
+  const info = TILE_DATA[gid] || { name: `Tile ${gid}`, pass: true, desc: 'Casilla sin evento especial.' };
 
   document.getElementById('card-title').textContent = `ID ${gid}: ${info.name}`;
   document.getElementById('val-gid').textContent = gid;
   document.getElementById('val-pos').textContent = `Col ${col + 1}, Fila ${row + 1}`;
 
   const layerElem = document.getElementById('val-layer');
-  layerElem.textContent = info.layer;
-  layerElem.className = 'layer-badge ' + (
-    info.layer.includes('Suelo') ? 'badge-suelo' :
-    info.layer.includes('Paredes') ? 'badge-paredes' : 'badge-objetos'
-  );
+  layerElem.textContent = info.pass ? '✅ SÍ-PASO (Suelo)' : '⛔ NO-PASO (Pared)';
+  layerElem.className = 'layer-badge ' + (info.pass ? 'badge-sipaso' : 'badge-nopaso');
 
   document.getElementById('val-desc').textContent = info.desc;
 
@@ -313,14 +574,13 @@ container.addEventListener('mousemove', (e) => {
   const col = Math.floor(x / TILE_SIZE_DISPLAY);
   const row = Math.floor(y / TILE_SIZE_DISPLAY);
 
-  if (col >= 0 && col < COLS && row >= 0 && row < 8) {
+  if (col >= 0 && col < COLS && row >= 0 && row < 4) {
     const gid = (row * COLS) + col + 1;
     selectTile(gid);
   }
 });
 
-// Select default Tile 2
-selectTile(2);
+selectTile(17);
 </script>
 </body>
 </html>

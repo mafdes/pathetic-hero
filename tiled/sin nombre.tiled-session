@@ -8,12 +8,23 @@
             "scaleInDock": 1.5671,
             "scaleInEditor": 1
         },
+        "nivel1.json": {
+            "scale": 1.4804166666666667,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 480.2701942020828,
+                "y": 271.8829158457642
+            }
+        },
+        "nivel1.json#dungeon_tiles": {
+            "scaleInDock": 1
+        },
         "nivel1.tmx": {
-            "scale": 2.3263,
+            "scale": 1.79,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 242.015217297855,
-                "y": 308.42969522417576
+                "x": 399.44134078212284,
+                "y": 200.8379888268156
             }
         }
     },
@@ -24,13 +35,12 @@
     "map.lastUsedFormat": "tmx",
     "map.width": 15,
     "openFiles": [
-        "nivel1.tmx",
-        "dungeon_tiles.tsx"
+        "nivel1.tmx"
     ],
     "project": "sin nombre.tiled-project",
     "recentFiles": [
-        "dungeon_tiles.tsx",
         "nivel1.tmx",
+        "dungeon_tiles.tsx",
         "nivel1.json"
     ],
     "tileset.lastUsedFormat": "tsx"
