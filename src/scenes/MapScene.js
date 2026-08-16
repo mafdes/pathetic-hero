@@ -218,9 +218,11 @@ export class MapScene extends Phaser.Scene {
   }
 
   _buildDungeon() {
-    const tiledData = this.cache.tilemap.get('level1_tiled');
-    if (tiledData && tiledData.data) {
-      this._buildDungeonFromTiled(tiledData.data);
+    const levelKey = `level${this._levelData.id}_tiled`;
+    const tilemapCache = this.cache.tilemap.get(levelKey) ?? this.cache.tilemap.get('level1_tiled');
+    const rawData = tilemapCache?.data ?? tilemapCache;
+    if (rawData && rawData.layers) {
+      this._buildDungeonFromTiled(rawData);
       return;
     }
 

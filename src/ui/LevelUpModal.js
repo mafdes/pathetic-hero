@@ -77,9 +77,10 @@ export class LevelUpModal {
       });
       this.container.add([label, desc]);
 
-      // Valor actual
-      const valTxt = this.scene.add.text(cx + 40, y, `${this.playerStats[attr.key]}`, {
-        fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#f0c040", resolution: 2,
+      // Valor actual con tope /20
+      const currentVal = this.playerStats[attr.key];
+      const valTxt = this.scene.add.text(cx + 40, y, `${currentVal}/20`, {
+        fontFamily: FONTS.PRIMARY, fontSize: "15px", color: "#f0c040", resolution: 2,
       }).setOrigin(0.5);
       this.valTexts[attr.key] = valTxt;
       this.container.add(valTxt);
@@ -122,7 +123,8 @@ export class LevelUpModal {
   }
 
   addPoint(key) {
-    if (this.tempPoints <= 0) return;
+    const currentVal = this.playerStats[key] + this.allocated[key];
+    if (this.tempPoints <= 0 || currentVal >= 20) return;
     SoundFx.playButtonClick();
     this.tempPoints--;
     this.allocated[key]++;
@@ -140,8 +142,8 @@ export class LevelUpModal {
   updateUI(key) {
     const currentVal = this.playerStats[key] + this.allocated[key];
     if (this.valTexts[key]) {
-      this.valTexts[key].setText(`${currentVal}`);
-      this.valTexts[key].setColor(this.allocated[key] > 0 ? "#4caf77" : "#f0c040");
+      this.valTexts[key].setText(`${currentVal}/20`);
+      this.valTexts[key].setColor(this.allocated[key] > 0 ? "#4caf77" : (currentVal >= 20 ? "#ffeb3b" : "#f0c040"));
     }
     if (this.ptsText) {
       this.ptsText.setText(`Puntos de Atributo Disponibles: ${this.tempPoints}`);

@@ -45,7 +45,7 @@ export class PlayerStats {
     while (this.currentExp >= this.nextLevelExp) {
       this.currentExp -= this.nextLevelExp;
       this.level += 1;
-      this.attributePoints += 2; // +2 Puntos de Atributo por Nivel
+      this.attributePoints += 1; // +1 Punto de Atributo por Nivel
       levelsGained += 1;
       leveledUp = true;
       this.nextLevelExp = this.getNextLevelThreshold(this.level);

@@ -1,234 +1,98 @@
 /**
- * levels.js — Definición de niveles de la mazmorra.
+ * levels.js — Catálogo Definitivo de Enemigos y Configuración de Niveles (Nivel 1 al 8).
  *
  * ARQUITECTURA:
- *  - map:       ASCII puro — solo estructura (muro/suelo/puertas/items estáticos)
- *               Caracteres: # muro  . suelo  @ inicio  D puerta  S escaleras
- *                           F fuente  R runa  C cofre  T trampa  E encuentro
- *                           K llave   (ítem recogible — abre puertas D)
- *  - encounters: tabla separada que mapea posiciones "col,row" a datos de encuentro.
- *               Cada encuentro define los enemigos que aparecen al entrar en esa tile.
- *
- * Flujo llave-puerta:
- *   1. Jugador pisa K → recoge la llave (se guarda en playerInventory.keys)
- *   2. Jugador intenta pasar por D → si tiene llave, la consume y abre la puerta
- *
- * Para editar el mapa visual usa: map-editor.html (pon 'E' donde quieras un encuentro)
- * Para editar encuentros, edita el array encounters[] de cada nivel.
+ *  - Los niveles 1 a 8 leen mapas Tiled desde `public/assets/maps/nivelX.json`.
+ *  - Cada enemigo tiene stats fijos, debilidades elementales y recompensas de EXP.
  */
 
-// ── CATÁLOGO DE ENEMIGOS ────────────────────────────────────────────────────
-// Arquetipos base con debilidades tácticas (weakness: 'magic' | 'physical')
+// ── CATÁLOGO DE ENEMIGOS DE LA MAZMORRA ─────────────────────────────────────
 export const ENEMY_TYPES = {
   goblin: {
     key:      'goblin',
-    sprite:   'entity-goblin',
     name:     'Goblin Explorador',
-    hp:       16, maxHp: 16,
-    attack:   4,
-    weakness: null, // Equilibrado
-    xp:       5,
-    desc:     'Pequeño, escabullidizo y ruidoso.',
-  },
-  goblin_alpha: {
-    key:      'goblin_alpha',
-    sprite:   'entity-goblin',
-    name:     'Goblin Jefe',
-    hp:       32, maxHp: 32,
-    attack:   7,
-    weakness: null,
+    hp:       10, maxHp: 10,
+    attack:   3,
     xp:       15,
-    desc:     'Ligeramente más grande y con casco robado.',
-  },
-  trasgo: {
-    key:      'trasgo',
-    sprite:   'entity-goblin',
-    name:     'Trasgo Archivero',
-    hp:       26, maxHp: 26,
-    attack:   6,
-    weakness: 'magic', // Armadura pesada → conductor de magia ✨
-    xp:       10,
-    desc:     'Lleva cota de malla pesada. La magia lo electrocuta.',
+    desc:     'Pequeño y escabullidizo. Débil a Físico y Fuego.',
   },
   mago_novato: {
     key:      'mago_novato',
-    sprite:   'entity-goblin',
-    name:     'Mago Novato del Gremio',
+    name:     'Mago Novato',
+    hp:       8, maxHp: 8,
+    attack:   4,
+    xp:       20,
+    desc:     'Sin armadura física. Muy débil a los golpes físicos.',
+  },
+  trasgo: {
+    key:      'trasgo',
+    name:     'Trasgo Archivero',
     hp:       14, maxHp: 14,
-    attack:   8,
-    weakness: 'physical', // Túnica ligera → cae ante la fuerza bruta ⚔️
-    xp:       12,
-    magic:    true,
-    desc:     'Aprendió tres hechizos. Sin armadura física.',
+    attack:   5,
+    xp:       25,
+    desc:     'Lleva armadura de hierro. Débil a los hechizos de Hielo y Rayo.',
+  },
+  goblin_alpha: {
+    key:      'goblin_alpha',
+    name:     'Jefe Goblin Alfa',
+    hp:       22, maxHp: 22,
+    attack:   6,
+    xp:       50,
+    boss:     true,
+    desc:     'Líder tribal temido. Débil a Fuego y Rayo.',
   },
   esqueleto: {
     key:      'esqueleto',
-    sprite:   'entity-goblin',
     name:     'Esqueleto Guardián',
-    hp:       20, maxHp: 20,
+    hp:       16, maxHp: 16,
     attack:   5,
-    weakness: 'magic', // Frágil a la luz arcana ✨
-    xp:       8,
-    desc:     'Huesos antiguos sensibles al choque arcano.',
+    xp:       30,
+    desc:     'Guerrero de huesos antiguos. Vulnerable a Magia Arcana y Fuego.',
   },
   minotauro: {
     key:      'minotauro',
-    sprite:   'entity-goblin',
-    name:     'Minotauro del Laberinto',
-    hp:       55, maxHp: 55,
-    attack:   10,
-    weakness: 'magic', // Embaste brutal, piel gruesa vulnerable a la magia ✨
-    xp:       50,
+    name:     'Minotauro del Laberinto (Mini-Jefe Nivel 4)',
+    hp:       38, maxHp: 38,
+    attack:   9,
+    xp:       80,
     boss:     true,
-    desc:     'Subjefe implacable. Un cornazo tuyo te manda al informe del gremio.',
+    desc:     'Subjefe colosal del Ecuador de la mazmorra. Débil a Hielo.',
+  },
+  golem: {
+    key:      'golem',
+    name:     'Guardián Golem de Piedra',
+    hp:       28, maxHp: 28,
+    attack:   8,
+    xp:       60,
+    desc:     'Constructo de roca dura. Débil a Fuego y Rayo.',
+  },
+  lord_oscuro: {
+    key:      'lord_oscuro',
+    name:     'LORD OSCURO DEL TRIBUNAL (JEFE FINAL NIVEL 8)',
+    hp:       65, maxHp: 65,
+    attack:   14,
+    xp:       150,
+    boss:     true,
+    desc:     'El tirano supremo de la mazmorra. ¡Derrótalo para completar la campaña!',
   },
 };
 
-// ── HELPER ──────────────────────────────────────────────────────────────────
 /** Crea un enemigo a partir de un arquetipo, con overrides opcionales */
-function enemy(typeKey, overrides = {}) {
-  return { ...ENEMY_TYPES[typeKey], ...overrides };
+export function enemy(typeKey, overrides = {}) {
+  const base = ENEMY_TYPES[typeKey] || ENEMY_TYPES.goblin;
+  return { ...base, ...overrides };
 }
 
-// ── NIVELES (Plan de 8 niveles con biomas visuales) ─────────────────────────
+/** Configuración estructural y metadatos de los 8 niveles de mazmorra */
 export const LEVELS = [
-  // ──────────────────────────────────────────────────────────────────────────
-  // NIVEL 1 — Mazmorra del Gremio (Planta B1: Sala de Iniciación)
-  // Tema visual: Púrpura Místico
-  // ──────────────────────────────────────────────────────────────────────────
-  {
-    id: 1,
-    name: 'Planta B1 — Sala de Iniciación',
-    theme: {
-      floor:       0x22143a,
-      floorBorder: 0x3d285c,
-      wall:        0x0f071c,
-      wallBorder:  0x6a4e8a,
-      wallFill:    0x2d1b46,
-    },
-    map: [
-      "#############",
-      "#@..........#",
-      "#.##.######.#",
-      "#....#.E....#", // (7,3) Emboscada doble goblins
-      "#.##.#.####.#",
-      "#.#..#......#",
-      "#.#.##.####.#",
-      "#...T......##",
-      "###.######..#",
-      "#R..#...E#..#", // (8,9) Mago novato (débil a físico)
-      "#.###.##.#.##",
-      "#.....#F.#..#",
-      "#.###.####.##",
-      "##..T....#C.#",
-      "#.####D###..#",
-      "#....#.E....#", // (7,15) Trasgo acorazado + Esqueleto (débiles a magia)
-      "#.##.#..####.",
-      "#K...#..E..S#", // (8,17) Jefe Final de Planta: Goblin Alfa 👑
-      "#############",
-    ],
-
-    // Muestra de todos los arquetipos para probar el sistema táctico
-    encounters: {
-      "7,3": {
-        label: 'Emboscada Doble Goblin',
-        enemies: [
-          enemy('goblin', { name: 'Goblin Explorador', hp: 16, maxHp: 16 }),
-          enemy('goblin', { name: 'Goblin Emboscador', hp: 16, maxHp: 16 }),
-        ],
-      },
-      "8,9": {
-        label: 'Mago en Prácticas',
-        enemies: [
-          enemy('mago_novato', { name: 'Mago Novato del Gremio' }), // ⚔️ Débil a Físico
-        ],
-      },
-      "7,15": {
-        label: 'Guardián Acorazado y Esqueleto',
-        enemies: [
-          enemy('trasgo',    { name: 'Trasgo Archivero', hp: 24, maxHp: 24 }), // ✨ Débil a Magia
-          enemy('esqueleto', { name: 'Esqueleto Reanimado', hp: 20, maxHp: 20 }), // ✨ Débil a Magia
-        ],
-      },
-      "8,17": {
-        label: 'Jefe de Planta B1',
-        enemies: [
-          enemy('goblin_alpha', { name: 'Jefe Goblin Alfa', hp: 36, maxHp: 36, attack: 8 }), // Boss final Nivel 1
-        ],
-      },
-    },
-
-    tileSize: 52,
-  },
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // NIVEL 2 — Archivos de la Cripta (Planta B2)
-  // Tema visual: Cripta Verde-Cian
-  // ──────────────────────────────────────────────────────────────────────────
-  {
-    id: 2,
-    name: 'Planta B2 — Archivos de la Cripta',
-    theme: {
-      floor:       0x14282e,
-      floorBorder: 0x244852,
-      wall:        0x07151c,
-      wallBorder:  0x4e788a,
-      wallFill:    0x1b3446,
-    },
-    map: [
-      "#############",
-      "#...........#",
-      "#.###.#####.#",
-      "#.#.E.#.....#",
-      "#.#.###.###.#",
-      "#...T.....E.#",
-      "#.#####.###.#",
-      "#.......#...#",
-      "#.###.###.#.#",
-      "#.#.E.....#.#",
-      "#.#.#######.#",
-      "#R..#...F...#",
-      "#.###.#####.#",
-      "#.....#.C...#",
-      "#.###.#.###.#",
-      "#.#...#...E.#",
-      "#.#.#####.#.#",
-      "#@..#.....S.#",
-      "#############",
-    ],
-    encounters: {
-      "5,3": {
-        label: 'Archivista Hostil',
-        enemies: [
-          enemy('trasgo', { name: 'Trasgo Archivista' }),
-          enemy('esqueleto'),
-        ],
-      },
-      "10,5": {
-        label: 'Patrulla Esquelética',
-        enemies: [
-          enemy('esqueleto'),
-          enemy('esqueleto'),
-        ],
-      },
-      "5,9": {
-        label: 'Mago en Prácticas',
-        enemies: [
-          enemy('mago_novato'),
-          enemy('goblin', { name: 'Goblin Escudero' }),
-        ],
-      },
-      "10,15": {
-        label: 'Jefe de Planta',
-        enemies: [
-          enemy('goblin_alpha'),
-          enemy('goblin'),
-          enemy('goblin'),
-        ],
-      },
-    },
-    tileSize: 52,
-  },
+  { id: 1, name: 'Planta B1 — Sala de Iniciación', boss: 'goblin_alpha' },
+  { id: 2, name: 'Planta B2 — Archivos de la Cripta', boss: 'trasgo' },
+  { id: 3, name: 'Planta B3 — Pasillos Oscuros', boss: 'esqueleto' },
+  { id: 4, name: 'Planta B4 — Catacumbas de los Héroes (ECUADOR)', boss: 'minotauro' },
+  { id: 5, name: 'Planta B5 — Laboratorio Abandonado', boss: 'mago_novato' },
+  { id: 6, name: 'Planta B6 — Prisión del Gremio', boss: 'golem' },
+  { id: 7, name: 'Planta B7 — Ala Prohibida Arcana', boss: 'golem' },
+  { id: 8, name: 'Planta B8 — Gran Tribunal del Señor Oscuro (FINAL)', boss: 'lord_oscuro' },
 ];
 
 /** Devuelve los datos del nivel por ID (1-based) */

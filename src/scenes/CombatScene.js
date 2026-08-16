@@ -193,10 +193,13 @@ export class CombatScene extends Phaser.Scene {
 
   _getWeaknessLabel(key) {
     switch (key) {
+      case 'lord_oscuro': return '👑 GRAN JEFE FINAL · Débil a RAYO y ARCANO';
+      case 'minotauro':   return '🐂 MINI-JEFE NIVEL 4 · Débil a HIELO';
+      case 'golem':       return '🗿 Débil a FUEGO y RAYO · Alta Armadura';
+      case 'esqueleto':   return '💀 Débil a FUEGO y ARCANO';
       case 'mago_novato': return '⚡ Débil a FÍSICO · Resistente a Magia';
       case 'trasgo':      return '❄️ Débil a HIELO y RAYO · Resistente a Físico';
       case 'goblin_alpha':return '🔥 Débil a FUEGO y RAYO · Alta Armadura';
-      case 'esqueleto':   return '🔥 Débil a FUEGO y ARCANO';
       default:            return '🗡️ Débil a FÍSICO y FUEGO';
     }
   }
@@ -205,11 +208,11 @@ export class CombatScene extends Phaser.Scene {
     if (type === 'physical') {
       if (enemyKey === 'mago_novato') return 1.8;
       if (enemyKey === 'goblin') return 1.2;
-      if (enemyKey === 'trasgo' || enemyKey === 'goblin_alpha') return 0.7;
+      if (enemyKey === 'trasgo' || enemyKey === 'goblin_alpha' || enemyKey === 'golem' || enemyKey === 'lord_oscuro') return 0.75;
       return 1.0;
     }
     if (type === 'fire') {
-      if (enemyKey === 'goblin' || enemyKey === 'goblin_alpha' || enemyKey === 'esqueleto') return 1.6;
+      if (enemyKey === 'goblin' || enemyKey === 'goblin_alpha' || enemyKey === 'esqueleto' || enemyKey === 'golem') return 1.6;
       return 1.0;
     }
     if (type === 'ice') {
@@ -218,12 +221,12 @@ export class CombatScene extends Phaser.Scene {
       return 1.0;
     }
     if (type === 'lightning') {
-      if (enemyKey === 'trasgo' || enemyKey === 'goblin_alpha') return 1.6;
+      if (enemyKey === 'trasgo' || enemyKey === 'goblin_alpha' || enemyKey === 'golem' || enemyKey === 'lord_oscuro') return 1.6;
       return 1.0;
     }
     if (type === 'arcane') {
       if (enemyKey === 'mago_novato') return 0.6;
-      if (enemyKey === 'esqueleto') return 1.5;
+      if (enemyKey === 'esqueleto' || enemyKey === 'lord_oscuro') return 1.6;
       return 1.0;
     }
     return 1.0;
@@ -561,19 +564,32 @@ export class CombatScene extends Phaser.Scene {
 
   _getEnemyAssetKey(key) {
     switch (key) {
-      case 'trasgo':      return 'enemy_trasgo';
-      case 'mago_novato': return 'enemy_mago';
-      case 'esqueleto':   return 'enemy_esqueleto';
-      case 'minotauro':   return 'enemy_minotauro';
-      default:            return 'enemy_goblin';
+      case 'lord_oscuro': return 'lord_oscuro_idle_0';
+      case 'golem':       return 'golem_idle_0';
+      case 'minotauro':   return 'minotauro_idle_0';
+      case 'esqueleto':   return 'esqueleto_idle_0';
+      case 'trasgo':      return 'trasgo_idle_0';
+      case 'mago_novato': return 'mago_novato_idle_0';
+      default:            return 'goblin_idle_0';
     }
   }
 
   _startEnemyIdleAnimation() {
     if (this._idleTween) this._idleTween.remove();
+
+    const baseY = this._enemySpriteY ?? this._enemyGfx.y;
+    const baseW = this._enemyGfx.displayWidth || 260;
+    const baseH = this._enemyGfx.displayHeight || 260;
+
     this._idleTween = this.tweens.add({
-      targets: [this._enemyGfx, this._enemyShadow],
-      scaleY: 1.05, scaleX: 0.97, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut",
+      targets: this._enemyGfx,
+      y: baseY - 6,
+      displayHeight: baseH + 8,
+      displayWidth: baseW - 4,
+      duration: 1100,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
     });
   }
 

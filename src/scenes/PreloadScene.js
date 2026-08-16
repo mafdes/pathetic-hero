@@ -4,6 +4,7 @@
 
 import * as Phaser from "phaser";
 import { COLORS, FONTS, FONT_SIZES, BASE_WIDTH, BASE_HEIGHT, SCENES } from "../utils/constants.js";
+import { buildAllEnemyTextureFrames } from "../graphics/EnemySpritesBuilder.js";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -13,10 +14,13 @@ export class PreloadScene extends Phaser.Scene {
   preload() {
     this._buildLoadingUI();
 
-    // ── Mapa de Tiled y Tileset ───────────────────────────────────────────────
+    // ── Mapa de Tiled y Tileset (Carga los 8 niveles) ─────────────────────────
     this.load.image("dungeon_tiles", "assets/tilesets/dungeon_tiles.png");
     this.load.spritesheet("dungeon_tiles_sheet", "assets/tilesets/dungeon_tiles.png", { frameWidth: 32, frameHeight: 32 });
-    this.load.tilemapTiledJSON("level1_tiled", "assets/maps/nivel1.json");
+    
+    for (let i = 1; i <= 8; i++) {
+      this.load.tilemapTiledJSON(`level${i}_tiled`, `assets/maps/nivel${i}.json`);
+    }
 
     // ── Sprites de Cofres, Llaves y Monedas (Jan Schneider) ────────────────────
     this.load.spritesheet("item_chest", "assets/images/items/Chest.png", { frameWidth: 14, frameHeight: 18 });
@@ -27,6 +31,9 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create() {
+    // Generar texturas de enemigos pixel art (Goblin, Mago, Trasgo, Esqueleto, Minotauro, Golem, Lord Oscuro)
+    buildAllEnemyTextureFrames(this);
+
     this.scene.start(SCENES.INTRO);
   }
 
