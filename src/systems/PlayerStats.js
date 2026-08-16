@@ -189,4 +189,41 @@ export class PlayerStats {
     this.currentHp = Math.max(0, this.currentHp - amount);
     return this.currentHp === 0;
   }
+
+  toJSON() {
+    return {
+      level: this.level,
+      currentExp: this.currentExp,
+      nextLevelExp: this.nextLevelExp,
+      attributePoints: this.attributePoints,
+      strength: this.strength,
+      dexterity: this.dexterity,
+      constitution: this.constitution,
+      wisdom: this.wisdom,
+      agility: this.agility,
+      currentHp: this.currentHp,
+      maxHp: this.maxHp,
+      currentMp: this.currentMp,
+      maxMp: this.maxMp,
+    };
+  }
+
+  fromJSON(data) {
+    if (!data) return;
+    this.level = data.level ?? 1;
+    this.currentExp = data.currentExp ?? 0;
+    this.nextLevelExp = data.nextLevelExp ?? 15;
+    this.attributePoints = data.attributePoints ?? 0;
+    this.strength = data.strength ?? this.strength;
+    this.dexterity = data.dexterity ?? this.dexterity;
+    this.constitution = data.constitution ?? this.constitution;
+    this.wisdom = data.wisdom ?? this.wisdom;
+    this.agility = data.agility ?? this.agility;
+
+    this.maxHp = (this.constitution + 1) * 5;
+    this.currentHp = Math.min(this.maxHp, data.currentHp ?? this.maxHp);
+
+    this.maxMp = (this.wisdom + 1) * 4;
+    this.currentMp = Math.min(this.maxMp, data.currentMp ?? this.maxMp);
+  }
 }

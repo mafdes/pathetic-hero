@@ -166,16 +166,14 @@ export class MainMenuScene extends Phaser.Scene {
   _continueSavedGame() {
     const saved = SaveManager.load();
     const sheet = new CharacterSheet();
-    if (saved) sheet.fromJSON(saved);
+    if (saved && saved.sheet) sheet.fromJSON(saved.sheet);
 
-    // Garantizar que no esté a 0 para pasar el Tribunal de Admisión
     let hasNonZero = Object.values(sheet.attributes).some(v => v !== null && v > 0);
     if (!hasNonZero) {
       Object.keys(sheet.attributes).forEach(k => {
         sheet.attributes[k] = randInt(1, 5);
       });
     }
-    SaveManager.save(sheet);
 
     this.scene.start(SCENES.MAP, { levelId: 1 });
   }
@@ -183,8 +181,8 @@ export class MainMenuScene extends Phaser.Scene {
   _devJumpToDungeon() {
     const saved = SaveManager.load();
     const sheet = new CharacterSheet();
-    if (saved) {
-      sheet.fromJSON(saved);
+    if (saved && saved.sheet) {
+      sheet.fromJSON(saved.sheet);
     } else {
       sheet.name = generateHeroName();
     }
@@ -194,7 +192,6 @@ export class MainMenuScene extends Phaser.Scene {
         sheet.attributes[k] = randInt(1, 5);
       }
     });
-    SaveManager.save(sheet);
 
     this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
     this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {

@@ -1,5 +1,6 @@
 import { COLORS, FONTS, DEPTHS } from "../utils/constants.js";
 import { SoundFx } from "../systems/SoundFx.js";
+import { SaveManager } from "../systems/SaveManager.js";
 
 export class LevelUpModal {
   constructor(scene, playerStats, onComplete) {
@@ -163,6 +164,10 @@ export class LevelUpModal {
 
     // Guardar los puntos sobrantes si hubiera
     this.playerStats.attributePoints = this.tempPoints;
+
+    if (this.scene.sheet) {
+      SaveManager.save(this.scene.sheet, this.playerStats);
+    }
 
     this.container.destroy();
     if (this.onComplete) this.onComplete();

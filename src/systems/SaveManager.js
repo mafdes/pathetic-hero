@@ -8,15 +8,17 @@ const VERSION = 1;
 
 export class SaveManager {
   /**
-   * Guarda la ficha del personaje.
+   * Guarda la ficha y las estadísticas del personaje.
    * @param {import('./CharacterSheet').CharacterSheet} sheet
+   * @param {import('./PlayerStats').PlayerStats} playerStats
    */
-  static save(sheet) {
+  static save(sheet, playerStats = null) {
     try {
       const data = {
         version: VERSION,
         savedAt: Date.now(),
         sheet: sheet.toJSON(),
+        stats: playerStats && typeof playerStats.toJSON === 'function' ? playerStats.toJSON() : null,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     } catch (e) {
@@ -37,7 +39,7 @@ export class SaveManager {
         console.warn("[SaveManager] Versión de save incompatible, ignorando.");
         return null;
       }
-      return data.sheet;
+      return data;
     } catch (e) {
       console.warn("[SaveManager] No se pudo cargar el save:", e);
       return null;

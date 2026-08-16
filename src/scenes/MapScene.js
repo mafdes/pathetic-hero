@@ -16,9 +16,16 @@ export class MapScene extends Phaser.Scene {
   create(data) {
     this.sheet = new CharacterSheet();
     const saved = SaveManager.load();
-    if (saved) this.sheet.fromJSON(saved);
+    if (saved && saved.sheet) this.sheet.fromJSON(saved.sheet);
 
-    this.playerStats = new PlayerStats(this.sheet.attributes);
+    if (data?.playerStats) {
+      this.playerStats = data.playerStats;
+    } else {
+      this.playerStats = new PlayerStats(this.sheet.attributes);
+      if (saved && saved.stats) {
+        this.playerStats.fromJSON(saved.stats);
+      }
+    }
     this.playerName = this.sheet.name || "Aspirante";
     this._dialogBox = new DialogBox(this);
 
@@ -915,10 +922,12 @@ export class MapScene extends Phaser.Scene {
         const nextLvlId = currentLvlId + 1;
         const nextLvlData = getLevel(nextLvlId);
 
+        SaveManager.save(this.sheet, this.playerStats);
+
         this._dialogBox.show(
           `¡PLANTA B${currentLvlId} SUPERADA!\n\nDescansas tras la incursión: Vida (PV) y Maná (PM) restaurados al 100%.\n\nDesciendes por las escaleras hacia la ${nextLvlData.name}.`,
           () => {
-            this.scene.restart({ levelId: nextLvlId });
+            this.scene.restart({ levelId: nextLvlId, playerStats: this.playerStats });
           },
           `¡Nivel B${currentLvlId} Completado!`
         );
