@@ -20,11 +20,14 @@
             "scaleInDock": 1
         },
         "nivel1.tmx": {
+            "expandedObjectLayers": [
+                2
+            ],
             "scale": 1.79,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 399.44134078212284,
-                "y": 200.8379888268156
+                "x": 349.72067039106145,
+                "y": 209.7765363128492
             }
         }
     },
@@ -35,13 +38,14 @@
     "map.lastUsedFormat": "tmx",
     "map.width": 15,
     "openFiles": [
-        "nivel1.tmx"
+        "nivel1.tmx",
+        "nivel1.json"
     ],
     "project": "sin nombre.tiled-project",
     "recentFiles": [
+        "nivel1.json",
         "nivel1.tmx",
-        "dungeon_tiles.tsx",
-        "nivel1.json"
+        "dungeon_tiles.tsx"
     ],
     "tileset.lastUsedFormat": "tsx"
 }

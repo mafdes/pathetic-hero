@@ -910,13 +910,27 @@ export class MapScene extends Phaser.Scene {
       this.playerStats.fullRestore();
       this._updateUI();
 
-      this._dialogBox.show(
-        "¡HAS COMPLETADO LA MAZMORRA DE PRUEBA!\n\nDescansas tras la incursión: Vida (PV) y Maná (PM) restaurados al 100%.",
-        () => {
-          this.scene.start(SCENES.HERO_SUMMARY);
-        },
-        "¡Nivel de Mazmorra Superado!"
-      );
+      const currentLvlId = this._levelData.id;
+      if (currentLvlId < 8) {
+        const nextLvlId = currentLvlId + 1;
+        const nextLvlData = getLevel(nextLvlId);
+
+        this._dialogBox.show(
+          `¡PLANTA B${currentLvlId} SUPERADA!\n\nDescansas tras la incursión: Vida (PV) y Maná (PM) restaurados al 100%.\n\nDesciendes por las escaleras hacia la ${nextLvlData.name}.`,
+          () => {
+            this.scene.restart({ levelId: nextLvlId });
+          },
+          `¡Nivel B${currentLvlId} Completado!`
+        );
+      } else {
+        this._dialogBox.show(
+          "🏆 ¡VICTORIA ABSOLUTA DEL GREMIO!\n\n¡Has derrotado al Lord Oscuro en la Planta B8 y has completado los 8 Niveles de Mazmorra!\n\nTu nombre quedará inmortalizado en los archivos heroicos.",
+          () => {
+            this.scene.start(SCENES.HERO_SUMMARY);
+          },
+          "¡CAMPAÑA COMPLETADA!"
+        );
+      }
       return;
     }
   }
