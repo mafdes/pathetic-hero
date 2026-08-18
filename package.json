@@ -1,6 +1,6 @@
 {
   "name": "pathetic-hero",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "description": "Un RPG satírico medieval donde el aspirante a héroe fracasa estrepitosamente en las pruebas del Gremio. Pixel art retro estilo SNES/Mega Drive.",
   "type": "module",
   "scripts": {
