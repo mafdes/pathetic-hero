@@ -5,6 +5,7 @@
 import * as Phaser from "phaser";
 import { COLORS, FONTS, FONT_SIZES, BASE_WIDTH, BASE_HEIGHT, SCENES } from "../utils/constants.js";
 import { buildAllEnemyTextureFrames } from "../graphics/EnemySpritesBuilder.js";
+import { EnemyAnimationManager } from "../systems/EnemyAnimationManager.js";
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -14,6 +15,9 @@ export class PreloadScene extends Phaser.Scene {
   preload() {
     this._buildLoadingUI();
 
+    // ── Precargar Assets Dinámicos de Enemigos (Imágenes + Mapa) ───────────────
+    EnemyAnimationManager.preloadEnemyAssets(this);
+
     // ── Mapa de Tiled y Tileset (Carga los 8 niveles) ─────────────────────────
     this.load.image("dungeon_tiles", "assets/tilesets/dungeon_tiles.png");
     this.load.spritesheet("dungeon_tiles_sheet", "assets/tilesets/dungeon_tiles.png", { frameWidth: 32, frameHeight: 32 });
@@ -22,18 +26,27 @@ export class PreloadScene extends Phaser.Scene {
       this.load.tilemapTiledJSON(`level${i}_tiled`, `assets/maps/nivel${i}.json`);
     }
 
-    // ── Sprites de Cofres, Llaves y Monedas (Jan Schneider) ────────────────────
-    this.load.spritesheet("item_chest", "assets/images/items/Chest.png", { frameWidth: 14, frameHeight: 18 });
-    this.load.spritesheet("item_chest_locked", "assets/images/items/Chest_Locked.png", { frameWidth: 14, frameHeight: 18 });
-    this.load.image("item_key", "assets/images/items/Key.png");
+    // ── Sprites de Cofres, Llaves, Trampas y Monedas ───────────────────────────
+    this.load.image("item_chest", "assets/images/items/chest.png");
+    this.load.image("item_key", "assets/images/items/key.png");
+    this.load.image("item_trap", "assets/images/items/trap.png");
     this.load.spritesheet("item_coin", "assets/images/items/Coin.png", { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet("item_coin_sparkle", "assets/images/items/Coin_Sparkle.png", { frameWidth: 32, frameHeight: 32 });
+
+    // ── Avatares de Clases de Tier IV ──────────────────────────────────────────
+    this.load.image("avatar_parchment_licker", "assets/images/classes/parchment_licker.jpg");
+    this.load.image("avatar_manure_carrier", "assets/images/classes/manure_carrier.jpg");
+    this.load.image("avatar_punch_sponge", "assets/images/classes/punch_sponge.jpg");
+    this.load.image("avatar_flea_bag", "assets/images/classes/flea_bag.jpg");
+    this.load.image("avatar_curb_tripper", "assets/images/classes/curb_tripper.jpg");
+
   }
 
   create() {
-    // Generar texturas de enemigos pixel art (Goblin, Mago, Trasgo, Esqueleto, Minotauro, Golem, Lord Oscuro)
-    buildAllEnemyTextureFrames(this);
+    // Registrar animaciones dinámicas desde el manifest de enemigos
+    EnemyAnimationManager.registerAnimations(this);
 
+    // Generar texturas de enemigos pixel art fallback
     this.scene.start(SCENES.INTRO);
   }
 

@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "split:enemy": "python3 tools/split-spritesheet.py",
+    "organize:enemy": "python3 tools/organize-enemy.py",
+    "build:enemies": "node tools/build-enemies.js",
+    "build": "npm run build:enemies && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

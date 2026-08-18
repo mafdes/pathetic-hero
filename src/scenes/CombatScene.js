@@ -14,6 +14,7 @@ import { COLORS, FONTS, SCENES, DEPTHS } from "../utils/constants.js";
 import { DialogBox } from "../ui/DialogBox.js";
 import { LevelUpModal } from "../ui/LevelUpModal.js";
 import { SoundFx } from "../systems/SoundFx.js";
+import { EnemyAnimationManager } from "../systems/EnemyAnimationManager.js";
 
 // ── Paleta de combate ─────────────────────────────────────────────────────────
 const C = {
@@ -120,16 +121,11 @@ export class CombatScene extends Phaser.Scene {
 
     // ── SPRITES ENEMIGOS EN ARENA ──────────────────────────────────────────
     const ex = cx;
-    const ey = H * 0.32;
-
-    this._enemyShadow = this.add.ellipse(ex, ey + 70, 160, 40, 0x000000, 0.4);
-    const activeKey = this._getEnemyAssetKey(this.enemyData.key);
-    if (this.textures.exists(activeKey)) {
-      this._enemyGfx = this.add.image(ex, ey, activeKey).setDisplaySize(260, 260);
-    } else {
-      this._enemyGfx = this.add.graphics();
-      this._drawEnemySprite(this._enemyGfx, ex, ey);
-    }
+    const ey = H * 0.40;
+    this._enemyShadow = this.add.ellipse(ex, ey, 160, 40, 0x000000, 0.4);
+    const enemyKey = (this.enemyData.key || 'goblin').replace('_alpha', '');
+    this._enemyGfx = EnemyAnimationManager.createEnemySprite(this, ex, ey, enemyKey);
+    this._enemyGfx.setDisplaySize(260, 260);
     this._enemySpriteX = ex;
     this._enemySpriteY = ey;
 
@@ -551,6 +547,17 @@ export class CombatScene extends Phaser.Scene {
   }
 
   _shakeEnemy() {
+    const enemyKey = (this.enemyData?.key || 'goblin').replace('_alpha', '');
+    const hurtAnimKey = `${enemyKey}_anim_hurt`;
+    const standAnimKey = `${enemyKey}_anim_stand`;
+    if (this.anims.exists(hurtAnimKey) && this._enemyGfx?.play) {
+      this._enemyGfx.play(hurtAnimKey);
+      this._enemyGfx.once("animationcomplete", () => {
+        if (this.enemyHp > 0 && this._enemyGfx?.active && this.anims.exists(standAnimKey)) {
+          this._enemyGfx.play(standAnimKey);
+        }
+      });
+    }
     this.tweens.add({
       targets: this._enemyGfx, x: "+=18", duration: 50, yoyo: true, repeat: 4, ease: "Sine.easeInOut",
     });
@@ -563,23 +570,16 @@ export class CombatScene extends Phaser.Scene {
   }
 
   _getEnemyAssetKey(key) {
-    switch (key) {
-      case 'lord_oscuro': return 'lord_oscuro_idle_0';
-      case 'golem':       return 'golem_idle_0';
-      case 'minotauro':   return 'minotauro_idle_0';
-      case 'esqueleto':   return 'esqueleto_idle_0';
-      case 'trasgo':      return 'trasgo_idle_0';
-      case 'mago_novato': return 'mago_novato_idle_0';
-      default:            return 'goblin_idle_0';
-    }
+    return EnemyAnimationManager.getValidTextureKey(this, key);
   }
 
   _startEnemyIdleAnimation() {
     if (this._idleTween) this._idleTween.remove();
+    if (!this._enemyGfx || !this._enemyGfx.active) return;
 
-    const baseY = this._enemySpriteY ?? this._enemyGfx.y;
-    const baseW = this._enemyGfx.displayWidth || 260;
-    const baseH = this._enemyGfx.displayHeight || 260;
+    const baseY = this._enemySpriteY ?? (this._enemyGfx.y || 400);
+    const baseW = 260;
+    const baseH = 260;
 
     this._idleTween = this.tweens.add({
       targets: this._enemyGfx,
@@ -595,29 +595,47 @@ export class CombatScene extends Phaser.Scene {
 
   _checkEnemyDefeat() {
     if (this.enemyHp <= 0) {
+      if (this._idleTween) this._idleTween.remove();
       const prevName = this.enemyData.name;
-      this.tweens.add({
-        targets: [this._enemyGfx, this._enemyShadow], scaleY: 0, alpha: 0, duration: 350, ease: "Cubic.In",
-      });
+      const enemyKey = (this.enemyData.key || 'goblin').replace('_alpha', '');
+      const dieAnimKey = `${enemyKey}_anim_die`;
 
-      if (this.enemyIndex + 1 < this.enemyList.length) {
-        this.enemyIndex++;
-        this.enemyData = { ...this.enemyList[this.enemyIndex] };
-        this.enemyHp   = this.enemyData.hp;
+      const proceedDefeat = () => {
+        this.tweens.add({
+          targets: [this._enemyGfx, this._enemyShadow], scaleY: 0, alpha: 0, duration: 400, ease: "Cubic.In",
+          onComplete: () => {
+            if (this.enemyIndex + 1 < this.enemyList.length) {
+              this.enemyIndex++;
+              this.enemyData = { ...this.enemyList[this.enemyIndex] };
+              this.enemyHp   = this.enemyData.hp;
 
-        if (this.enemyNameText) this.enemyNameText.setText(this.enemyData.name.toUpperCase());
-        if (this.enemyWeaknessText) {
-          this.enemyWeaknessText.setText(this._getWeaknessLabel(this.enemyData.key));
-        }
-        this._updateBars(false);
+              if (this.enemyNameText) this.enemyNameText.setText(this.enemyData.name.toUpperCase());
+              if (this.enemyWeaknessText) {
+                this.enemyWeaknessText.setText(this._getWeaknessLabel(this.enemyData.key));
+              }
+              this._updateBars(false);
 
-        const countInfo = `(${this.enemyIndex + 1}/${this.enemyList.length})`;
-        this._dialogBox.show(
-          `¡${prevName} cae derrotado! ${countInfo}\n¡${this.enemyData.name} da un paso al frente!`,
-          () => this._enemyTurn()
-        );
+              const nextKey = (this.enemyData.key || 'goblin').replace('_alpha', '');
+              const nextActiveKey = this._getEnemyAssetKey(nextKey);
+              if (this._enemyGfx?.setTexture) {
+                this._enemyGfx.setTexture(nextActiveKey);
+                this._enemyGfx.setAlpha(1).setScale(1).setDisplaySize(260, 260);
+                const standAnimKey = `${nextKey}_anim_stand`;
+                if (this.anims.exists(standAnimKey)) this._enemyGfx.play(standAnimKey);
+              }
+              this._enemyShadow.setAlpha(0.4).setScale(1);
+            } else {
+              this._handleWin();
+            }
+          }
+        });
+      };
+
+      if (this.anims.exists(dieAnimKey) && this._enemyGfx?.play) {
+        this._enemyGfx.play(dieAnimKey);
+        this.time.delayedCall(700, proceedDefeat);
       } else {
-        this._handleWin();
+        proceedDefeat();
       }
     } else {
       this._enemyTurn();
@@ -678,6 +696,19 @@ export class CombatScene extends Phaser.Scene {
 
   _enemyTurn() {
     this._turnText.setText("💀 TURNO ENEMIGO").setColor("#e53935");
+
+    const enemyKey = (this.enemyData?.key || 'goblin').replace('_alpha', '');
+    const attackAnimKey = `${enemyKey}_anim_attack`;
+    const standAnimKey = `${enemyKey}_anim_stand`;
+
+    if (this.anims.exists(attackAnimKey) && this._enemyGfx?.play) {
+      this._enemyGfx.play(attackAnimKey);
+      this._enemyGfx.once("animationcomplete", () => {
+        if (this.enemyHp > 0 && this._enemyGfx?.active && this.anims.exists(standAnimKey)) {
+          this._enemyGfx.play(standAnimKey);
+        }
+      });
+    }
 
     let evasion = this.playerStats.getEvasionChance();
     if (this.isDefending) evasion = Math.min(evasion * 2, 90);

@@ -1,0 +1,337 @@
+{
+  "enemies": {
+    "esqueleto": {
+      "id": "esqueleto",
+      "mapSprite": "assets/enemies/esqueleto/map.png",
+      "animations": {
+        "attack": {
+          "frameCount": 1,
+          "frameRate": 10,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/esqueleto/attack01.png"
+          ]
+        },
+        "die": {
+          "frameCount": 1,
+          "frameRate": 6,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/esqueleto/die01.png"
+          ]
+        },
+        "hurt": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/esqueleto/hurt01.png"
+          ]
+        },
+        "map": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/esqueleto/map.png"
+          ]
+        },
+        "stand": {
+          "frameCount": 2,
+          "frameRate": 4,
+          "repeat": -1,
+          "frames": [
+            "assets/enemies/esqueleto/stand01.png",
+            "assets/enemies/esqueleto/stand02.png"
+          ]
+        }
+      }
+    },
+    "goblin": {
+      "id": "goblin",
+      "mapSprite": "assets/enemies/goblin/map.png",
+      "animations": {
+        "attack": {
+          "frameCount": 3,
+          "frameRate": 10,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/goblin/attack01.png",
+            "assets/enemies/goblin/attack02.png",
+            "assets/enemies/goblin/attack03.png"
+          ]
+        },
+        "die": {
+          "frameCount": 2,
+          "frameRate": 6,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/goblin/die01.png",
+            "assets/enemies/goblin/die02.png"
+          ]
+        },
+        "hurt": {
+          "frameCount": 2,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/goblin/hurt01.png",
+            "assets/enemies/goblin/hurt02.png"
+          ]
+        },
+        "map": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/goblin/map.png"
+          ]
+        },
+        "stand": {
+          "frameCount": 2,
+          "frameRate": 4,
+          "repeat": -1,
+          "frames": [
+            "assets/enemies/goblin/stand01.png",
+            "assets/enemies/goblin/stand02.png"
+          ]
+        }
+      }
+    },
+    "golem": {
+      "id": "golem",
+      "mapSprite": "assets/enemies/golem/map.png",
+      "animations": {
+        "attack": {
+          "frameCount": 1,
+          "frameRate": 10,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/golem/attack01.png"
+          ]
+        },
+        "die": {
+          "frameCount": 1,
+          "frameRate": 6,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/golem/die01.png"
+          ]
+        },
+        "hurt": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/golem/hurt01.png"
+          ]
+        },
+        "map": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/golem/map.png"
+          ]
+        },
+        "stand": {
+          "frameCount": 2,
+          "frameRate": 4,
+          "repeat": -1,
+          "frames": [
+            "assets/enemies/golem/stand01.png",
+            "assets/enemies/golem/stand02.png"
+          ]
+        }
+      }
+    },
+    "lord_oscuro": {
+      "id": "lord_oscuro",
+      "mapSprite": "assets/enemies/lord_oscuro/map.png",
+      "animations": {
+        "attack": {
+          "frameCount": 1,
+          "frameRate": 10,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/lord_oscuro/attack01.png"
+          ]
+        },
+        "die": {
+          "frameCount": 1,
+          "frameRate": 6,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/lord_oscuro/die01.png"
+          ]
+        },
+        "hurt": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/lord_oscuro/hurt01.png"
+          ]
+        },
+        "map": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/lord_oscuro/map.png"
+          ]
+        },
+        "stand": {
+          "frameCount": 2,
+          "frameRate": 4,
+          "repeat": -1,
+          "frames": [
+            "assets/enemies/lord_oscuro/stand01.png",
+            "assets/enemies/lord_oscuro/stand02.png"
+          ]
+        }
+      }
+    },
+    "mago_novato": {
+      "id": "mago_novato",
+      "mapSprite": "assets/enemies/mago_novato/map.png",
+      "animations": {
+        "attack": {
+          "frameCount": 1,
+          "frameRate": 10,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/mago_novato/attack01.png"
+          ]
+        },
+        "die": {
+          "frameCount": 1,
+          "frameRate": 6,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/mago_novato/die01.png"
+          ]
+        },
+        "hurt": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/mago_novato/hurt01.png"
+          ]
+        },
+        "map": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/mago_novato/map.png"
+          ]
+        },
+        "stand": {
+          "frameCount": 2,
+          "frameRate": 4,
+          "repeat": -1,
+          "frames": [
+            "assets/enemies/mago_novato/stand01.png",
+            "assets/enemies/mago_novato/stand02.png"
+          ]
+        }
+      }
+    },
+    "minotauro": {
+      "id": "minotauro",
+      "mapSprite": "assets/enemies/minotauro/map.png",
+      "animations": {
+        "attack": {
+          "frameCount": 1,
+          "frameRate": 10,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/minotauro/attack01.png"
+          ]
+        },
+        "die": {
+          "frameCount": 1,
+          "frameRate": 6,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/minotauro/die01.png"
+          ]
+        },
+        "hurt": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/minotauro/hurt01.png"
+          ]
+        },
+        "map": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/minotauro/map.png"
+          ]
+        },
+        "stand": {
+          "frameCount": 2,
+          "frameRate": 4,
+          "repeat": -1,
+          "frames": [
+            "assets/enemies/minotauro/stand01.png",
+            "assets/enemies/minotauro/stand02.png"
+          ]
+        }
+      }
+    },
+    "trasgo": {
+      "id": "trasgo",
+      "mapSprite": "assets/enemies/trasgo/map.png",
+      "animations": {
+        "attack": {
+          "frameCount": 1,
+          "frameRate": 10,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/trasgo/attack01.png"
+          ]
+        },
+        "die": {
+          "frameCount": 1,
+          "frameRate": 6,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/trasgo/die01.png"
+          ]
+        },
+        "hurt": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/trasgo/hurt01.png"
+          ]
+        },
+        "map": {
+          "frameCount": 1,
+          "frameRate": 8,
+          "repeat": 0,
+          "frames": [
+            "assets/enemies/trasgo/map.png"
+          ]
+        },
+        "stand": {
+          "frameCount": 2,
+          "frameRate": 4,
+          "repeat": -1,
+          "frames": [
+            "assets/enemies/trasgo/stand01.png",
+            "assets/enemies/trasgo/stand02.png"
+          ]
+        }
+      }
+    }
+  }
+}

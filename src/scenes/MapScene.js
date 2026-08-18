@@ -288,7 +288,14 @@ export class MapScene extends Phaser.Scene {
           // Encuentro — los datos vienen de level.encounters
           const encData = level.encounters?.[`${c},${r}`];
           const count   = encData?.enemies?.length ?? 1;
-          const sprite  = this.add.image(wx, wy, 'entity-goblin');
+          const enemyKey = encData?.enemies?.[0]?.key || 'goblin';
+          const mapTexKey = `${enemyKey}_map_0`;
+          const textureKey = this.textures.exists(mapTexKey) ? mapTexKey : (this.textures.exists(`${enemyKey}_stand_0`) ? `${enemyKey}_stand_0` : 'entity-goblin');
+          const sprite  = this.add.image(wx, wy, textureKey);
+          if (textureKey !== 'entity-goblin') {
+            sprite.setDisplaySize(this.tileSize * 0.85, this.tileSize * 0.85);
+            sprite.setOrigin(0.5, 0.5);
+          }
 
           let badge = null;
           if (count > 1) {
@@ -305,14 +312,18 @@ export class MapScene extends Phaser.Scene {
             badge,
           };
         } else if (char === 'K') {
-          // Llave recogible
-          const sprite = this.add.image(wx, wy, 'entity-key');
+          // Llave recogible (preserva relación de aspecto)
+          const sprite = this.add.image(wx, wy, 'item_key');
+          const scale = (this.tileSize * 0.7) / Math.max(sprite.width, sprite.height);
+          sprite.setScale(scale);
           this.entities[`${c},${r}`] = { type: 'key', sprite };
         } else if (char === 'D') {
           const sprite = this.add.image(wx, wy, 'entity-door');
           this.entities[`${c},${r}`] = { type: 'door', sprite };
         } else if (char === 'T') {
-          const sprite = this.add.image(wx, wy, 'entity-trap');
+          const sprite = this.add.image(wx, wy, 'item_trap');
+          const scale = (this.tileSize * 0.8) / Math.max(sprite.width, sprite.height);
+          sprite.setScale(scale);
           this.entities[`${c},${r}`] = { type: 'trap', sprite };
         } else if (char === 'R') {
           const sprite = this.add.image(wx, wy, 'entity-rune');
@@ -321,7 +332,9 @@ export class MapScene extends Phaser.Scene {
           const sprite = this.add.image(wx, wy, 'entity-fountain');
           this.entities[`${c},${r}`] = { type: 'fountain', sprite };
         } else if (char === 'C') {
-          const sprite = this.add.image(wx, wy, 'entity-chest');
+          const sprite = this.add.image(wx, wy, 'item_chest');
+          const scale = (this.tileSize * 0.85) / Math.max(sprite.width, sprite.height);
+          sprite.setScale(scale);
           this.entities[`${c},${r}`] = { type: 'chest', sprite };
         } else if (char === 'S') {
           const sprite = this.add.image(wx, wy, 'entity-stairs');
@@ -332,7 +345,7 @@ export class MapScene extends Phaser.Scene {
 
     const pwx = this.offsetX + this.playerPos.x * this.tileSize + this.tileSize / 2;
     const pwy = this.offsetY + this.playerPos.y * this.tileSize + this.tileSize / 2;
-    this.playerSprite = this.add.image(pwx, pwy, 'entity-player').setDepth(DEPTHS.PLAYER);
+    this._createPlayerWithFlies(pwx, pwy);
 
     this._updateFogOfWar();
   }
@@ -369,19 +382,27 @@ export class MapScene extends Phaser.Scene {
       const data = layer.data;
       for (let r = 0; r < this.rows; r++) {
         for (let c = 0; c < this.cols; c++) {
-          const gid = data[r * this.cols + c];
-          if (gid === 0) continue;
+          const rawGid = data[r * this.cols + c];
+          if (rawGid === 0) continue;
+
+          // Limpiar flags de volteo de Tiled (H-Flip: 0x80000000, V-Flip: 0x40000000)
+          const flippedH = !!(rawGid & 0x80000000);
+          const flippedV = !!(rawGid & 0x40000000);
+          const realGid  = rawGid & 0x1FFFFFFF;
+          if (realGid === 0) continue;
 
           const wx = this.offsetX + c * this.tileSize + this.tileSize / 2;
           const wy = this.offsetY + r * this.tileSize + this.tileSize / 2;
 
           // Regla del Tileset Unificado: GIDs 1 a 16 (Filas 1 y 2) = PARED / OBSTÁCULO (NO-PASO)
-          const isWall = (gid >= 1 && gid <= 16);
+          const isWall = (realGid >= 1 && realGid <= 16);
 
-          // Renderizar la textura exacta del tileset dibujada en Tiled (frame index = gid - 1)
+          // Renderizar la textura exacta del tileset dibujada en Tiled (frame index = realGid - 1)
           if (this.textures.exists('dungeon_tiles_sheet')) {
-            this.add.image(wx, wy, 'dungeon_tiles_sheet', gid - 1)
+            const tileImg = this.add.image(wx, wy, 'dungeon_tiles_sheet', realGid - 1)
               .setDisplaySize(this.tileSize, this.tileSize);
+            if (flippedH) tileImg.setFlipX(true);
+            if (flippedV) tileImg.setFlipY(true);
           } else {
             this.add.image(wx, wy, isWall ? 'tile-wall' : 'tile-floor');
           }
@@ -460,7 +481,14 @@ export class MapScene extends Phaser.Scene {
             enemies: enemyList
           };
 
-          const sprite = this.add.image(wx, wy, 'entity-goblin');
+          const firstEnemyKey = enemyKeys[0] || 'goblin';
+          const mapTexKey = `${firstEnemyKey}_map_0`;
+          const textureKey = this.textures.exists(mapTexKey) ? mapTexKey : (this.textures.exists(`${firstEnemyKey}_stand_0`) ? `${firstEnemyKey}_stand_0` : 'entity-goblin');
+          const sprite = this.add.image(wx, wy, textureKey);
+          if (textureKey !== 'entity-goblin') {
+            sprite.setDisplaySize(this.tileSize * 0.85, this.tileSize * 0.85);
+            sprite.setOrigin(0.5, 0.5);
+          }
 
           let badge = null;
           if (enemyList.length > 1) {
@@ -475,20 +503,22 @@ export class MapScene extends Phaser.Scene {
           const sprite = this.add.image(wx, wy, 'entity-stairs');
           this.entities[`${c},${r}`] = { type: 'stairs', sprite };
         } else if (isType('ItemKey', 'llave')) {
-          const keyTexture = this.textures.exists('item_key') ? 'item_key' : 'entity-key';
-          const sprite = this.add.image(wx, wy, keyTexture);
-          if (keyTexture === 'item_key') sprite.setDisplaySize(this.tileSize * 0.65, this.tileSize * 0.65);
+          const sprite = this.add.image(wx, wy, 'item_key');
+          const scale = (this.tileSize * 0.7) / Math.max(sprite.width, sprite.height);
+          sprite.setScale(scale);
           this.entities[`${c},${r}`] = { type: 'key', sprite };
         } else if (isType('Door', 'puerta')) {
           const sprite = this.add.image(wx, wy, 'entity-door');
           this.entities[`${c},${r}`] = { type: 'door', sprite };
         } else if (isType('Chest', 'cofre')) {
-          const chestTexture = this.textures.exists('item_chest') ? 'item_chest' : 'entity-chest';
-          const sprite = this.add.image(wx, wy, chestTexture, 0);
-          if (chestTexture === 'item_chest') sprite.setDisplaySize(this.tileSize * 0.8, this.tileSize * 0.8);
+          const sprite = this.add.image(wx, wy, 'item_chest');
+          const scale = (this.tileSize * 0.85) / Math.max(sprite.width, sprite.height);
+          sprite.setScale(scale);
           this.entities[`${c},${r}`] = { type: 'chest', sprite };
         } else if (isType('Trap', 'trampa')) {
-          const sprite = this.add.image(wx, wy, 'entity-trap');
+          const sprite = this.add.image(wx, wy, 'item_trap');
+          const scale = (this.tileSize * 0.8) / Math.max(sprite.width, sprite.height);
+          sprite.setScale(scale);
           this.entities[`${c},${r}`] = { type: 'trap', sprite };
         } else if (isType('Fountain', 'fuente')) {
           const sprite = this.add.image(wx, wy, 'entity-fountain');
@@ -513,9 +543,61 @@ export class MapScene extends Phaser.Scene {
 
     const pwx = this.offsetX + this.playerPos.x * this.tileSize + this.tileSize / 2;
     const pwy = this.offsetY + this.playerPos.y * this.tileSize + this.tileSize / 2;
-    this.playerSprite = this.add.image(pwx, pwy, 'entity-player').setDepth(DEPTHS.PLAYER);
+    this._createPlayerWithFlies(pwx, pwy);
 
     this._updateFogOfWar();
+  }
+
+  _createPlayerWithFlies(pwx, pwy) {
+    if (this.playerSprite) this.playerSprite.destroy();
+    if (this.flies) this.flies.forEach(f => f.shape?.destroy());
+
+    const archetype = this.sheet?.archetype || 'guerrero';
+
+    // Tintes cómicos para las clases de Tier IV (barro, hojalata, pulgas, etc.)
+    const TINTS = {
+      mago: 0x9b59b6,       // Púrpura sucio descolorido
+      guerrero: 0x7f8c8d,   // Hojalata oxidada
+      tanque: 0xd35400,     // Cuero embarrado
+      picaro: 0x27ae60,     // Verde infestación de pulgas
+      explorador: 0xf1c40f, // Polvo del camino y tierra
+    };
+
+    const tintColor = TINTS[archetype] ?? 0x7f8c8d;
+    this.playerSprite = this.add.image(pwx, pwy, 'entity-player')
+      .setDepth(DEPTHS.PLAYER)
+      .setTint(tintColor);
+
+    // Moscas revoloteando alrededor del héroe patético (Tier IV)
+    this.flies = [];
+    for (let i = 0; i < 4; i++) {
+      const fly = this.add.circle(pwx, pwy, 2.5, 0x111111, 0.95)
+        .setDepth(DEPTHS.PLAYER + 1);
+      this.flies.push({
+        shape: fly,
+        angle: (Math.PI * 2 / 4) * i,
+        speed: 0.06 + Math.random() * 0.04,
+        radius: 14 + Math.random() * 8,
+      });
+    }
+
+    if (!this._fliesListenerActive) {
+      this._fliesListenerActive = true;
+      this.events.on('update', this._updateFlies, this);
+    }
+  }
+
+  _updateFlies() {
+    if (!this.playerSprite || !this.flies) return;
+    const px = this.playerSprite.x;
+    const py = this.playerSprite.y - 4;
+
+    this.flies.forEach((f) => {
+      f.angle += f.speed;
+      const fx = px + Math.cos(f.angle) * f.radius + (Math.random() * 4 - 2);
+      const fy = py + Math.sin(f.angle) * (f.radius * 0.6) + (Math.random() * 4 - 2);
+      f.shape.setPosition(fx, fy);
+    });
   }
 
   _updateFogOfWar() {

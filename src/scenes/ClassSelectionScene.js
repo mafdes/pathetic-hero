@@ -86,9 +86,11 @@ export class ClassSelectionScene extends Phaser.Scene {
 
     tierData.classes.forEach((cls, idx) => {
       const y = startY + idx * gapY;
-      if (y + itemH > H - 110) return; // Evitar salir de pantalla en vertical
+      if (y + itemH > H - 100) return; // Evitar salir de pantalla en vertical
 
       const isRejected = this._rejectedClasses.has(cls.id);
+      const avatarKey  = cls.avatarKey;
+      const hasAvatar  = avatarKey && this.textures.exists(avatarKey);
 
       // Tarjeta Panel
       const bg = this.add.rectangle(cx, y + itemH / 2, W - 70, itemH, isRejected ? 0x220c0c : COLORS.UI_PANEL, isRejected ? 0.85 : 0.95)
@@ -98,29 +100,49 @@ export class ClassSelectionScene extends Phaser.Scene {
       }
       this._container.add(bg);
 
-      // Línea 1: Nombre de la clase (Izquierda)
-      const title = this.add.text(cx - 260, y + 26, cls.name, {
-        fontFamily: FONTS.PRIMARY, fontSize: "20px", color: isRejected ? "#885555" : "#f0c040", resolution: 2,
+      // Offset X si hay avatar
+      const contentLeft = hasAvatar ? cx - 180 : cx - 280;
+      const contentW    = hasAvatar ? W - 220 : W - 120;
+
+      if (hasAvatar) {
+        // Thumbnail Avatar
+        const thumbX = cx - 240;
+        const thumbY = y + itemH / 2;
+        const thumbSize = 90;
+
+        const thumbFrame = this.add.rectangle(thumbX, thumbY, thumbSize + 4, thumbSize + 4, COLORS.BG_DARK, 1)
+          .setStrokeStyle(2, COLORS.GOLD);
+        this._container.add(thumbFrame);
+
+        const thumbImg = this.add.image(thumbX, thumbY, avatarKey);
+        thumbImg.setDisplaySize(thumbSize, thumbSize);
+        this._container.add(thumbImg);
+      }
+
+      // Línea 1: Nombre de la clase
+      const titleFontSz = cls.name.length > 26 ? "15px" : cls.name.length > 20 ? "17px" : "19px";
+      const title = this.add.text(contentLeft, y + 24, cls.name, {
+        fontFamily: FONTS.PRIMARY, fontSize: titleFontSz, color: isRejected ? "#885555" : "#f0c040", resolution: 2,
       }).setOrigin(0, 0.5);
       this._container.add(title);
 
       // Sello [ RECHAZADO ] si fue denegado previamente
       if (isRejected) {
-        const stamp = this.add.text(cx + 260, y + 26, "[ RECHAZADO ]", {
-          fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#ff4444", stroke: "#000000", strokeThickness: 3, resolution: 2,
+        const stamp = this.add.text(cx + 270, y + 24, "[ RECHAZADO ]", {
+          fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#ff4444", stroke: "#000000", strokeThickness: 3, resolution: 2,
         }).setOrigin(1, 0.5);
         this._container.add(stamp);
       }
 
-      // Línea 2: Requisitos exigidos (con auto-wrapping para clases con muchos requisitos como Paladín)
-      const req = this.add.text(cx - 260, y + 58, `[ ${cls.reqText} ]`, {
-        fontFamily: FONTS.PRIMARY, fontSize: "13px", color: isRejected ? "#664444" : "#9d7bb0", wordWrap: { width: W - 140 }, resolution: 2,
+      // Línea 2: Requisitos exigidos
+      const req = this.add.text(contentLeft, y + 56, `[ ${cls.reqText} ]`, {
+        fontFamily: FONTS.PRIMARY, fontSize: "12px", color: isRejected ? "#664444" : "#9d7bb0", wordWrap: { width: contentW - 40 }, resolution: 2,
       }).setOrigin(0, 0.5);
       this._container.add(req);
 
       // Línea 3: Descripción humorística narrativa
-      const desc = this.add.text(cx - 260, y + 116, cls.description, {
-        fontFamily: FONTS.PRIMARY, fontSize: "14px", color: isRejected ? "#776666" : "#f0e6d3", wordWrap: { width: W - 140 }, lineSpacing: 5, resolution: 2,
+      const desc = this.add.text(contentLeft, y + 114, cls.description, {
+        fontFamily: FONTS.PRIMARY, fontSize: "13px", color: isRejected ? "#776666" : "#f0e6d3", wordWrap: { width: contentW - 20 }, lineSpacing: 4, resolution: 2,
       }).setOrigin(0, 0.5);
       this._container.add(desc);
 
@@ -151,36 +173,33 @@ export class ClassSelectionScene extends Phaser.Scene {
   }
 
   _trySelectClass(cls, tierData) {
-    // Evaluar si se cumplen los requisitos
-    const reqs = cls.requirements || {};
-    let meetsReqs = true;
-
-    for (const [attr, minVal] of Object.entries(reqs)) {
-      const userVal = this.sheet.attributes[attr] ?? 0;
-      if (userVal < minVal) {
-        meetsReqs = false;
-        break;
-      }
-    }
-
-    if (meetsReqs) {
-      // ¡Aceptado!
+    if (tierData.tier === 4) {
+      // ¡Asignación final en Tier IV!
       this.sheet.heroClass = cls.id;
+      this.sheet.archetype = cls.archetype;
       SaveManager.save(this.sheet);
 
-      this._dialog.show(`¡SOLICITUD ACEPTADA!\n\nEl Tribunal te ha concedido el título de:\n${cls.name}.\n\n¡Comienza tu desastrosa aventura!`, () => {
-        this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
-        this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
-          this.scene.start(SCENES.HERO_SUMMARY);
-        });
-      }, "Tribunal del Gremio");
+      this._dialog.show(
+        `¡ASIGNACIÓN OBLIGATORIA CONCEDIDA!\n\nEl Tribunal te concede la clase de consolación:\n${cls.name}.\n\n(0 Bonus de Atributos - El gremio ha tirado la toalla).\n\n¡Comienza tu desastrosa aventura!`,
+        () => {
+          this.cameras.main.fadeOut(TIMING.TRANSITION_DURATION, 0, 0, 0);
+          this.time.delayedCall(TIMING.TRANSITION_DURATION, () => {
+            this.scene.start(SCENES.HERO_SUMMARY);
+          });
+        },
+        "Tribunal del Gremio"
+      );
     } else {
-      // Rechazo sarcástico: registrar la clase como rechazada
+      // Rechazo sarcástico ineludible para Tiers I, II y III
       this._rejectedClasses.add(cls.id);
 
-      this._dialog.show(`SOLICITUD RECHAZADA\n\n${cls.rejection}\n\nRequisito: ${cls.reqText}`, () => {
-        this._renderTierUI(); // Actualizar UI para estampar el sello [ RECHAZADO ]
-      }, "Tribunal del Gremio");
+      this._dialog.show(
+        `SOLICITUD RECHAZADA\n\n${cls.rejection}\n\nRequisito Exigido: Puntuación de 20 Impecable en la prueba correspondiente.`,
+        () => {
+          this._renderTierUI(); // Actualizar UI para estampar el sello [ RECHAZADO ]
+        },
+        "Tribunal del Gremio"
+      );
     }
   }
 }

@@ -23,9 +23,9 @@ El juego utiliza **Phaser 4** con cámara **autocentrada en el personaje** (`thi
 
 ## 🎨 2. Regla del Tileset Unificado de 4 Filas (`dungeon_tiles.png`)
 
-* **Ubicación:** [`public/assets/tilesets/dungeon_tiles.png`](file:///Users/marcosfernandezsole/Documents/GitHub/pathetic-hero/public/assets/tilesets/dungeon_tiles.png)
+* **Ubicación:** [`public/assets/tilesets/dungeon_tiles.png`](public/assets/tilesets/dungeon_tiles.png)
 * **Dimensiones Totales:** `256 × 128` px (8 columnas × 4 filas = **32 casillas de 32x32 px**).
-* **Visualizador Interactivo:** Abre [`tileset-viewer.html`](file:///Users/marcosfernandezsole/Documents/GitHub/pathetic-hero/tileset-viewer.html) en tu navegador.
+* **Visualizador Interactivo:** Abre [`tileset-viewer.html`](tileset-viewer.html) en tu navegador.
 
 ### Regla de Colisión Súper Simple:
 * ⛔ **FILAS 1 Y 2 (GIDs 1 al 16): PAREDES Y OBSTÁCULOS (NO-PASO)**

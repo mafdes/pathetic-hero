@@ -93,23 +93,66 @@ export class HeroSummaryScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this._container.add(this._nameText);
 
-    // ── SECCIÓN 2: CLASE SELECCIONADA Y SÁTIRA ────────────────────────────────
-    const classBoxY = 295;
+    // ── SECCIÓN 2: CLASE SELECCIONADA Y RETRATO DE HUMILLACIÓN ─────────────────
+    const classBoxY = 310;
+    const classBoxH = 175;
     const heroClassData = this._getHeroClassData(this.sheet.heroClass);
 
-    const classBox = this.add.rectangle(cx, classBoxY, W - 70, 140, COLORS.UI_PANEL, 0.95)
+    const classBox = this.add.rectangle(cx, classBoxY, W - 70, classBoxH, COLORS.UI_PANEL, 0.95)
       .setStrokeStyle(3, COLORS.GOLD_DARK);
     this._container.add(classBox);
 
-    const classTitle = this.add.text(cx - 260, classBoxY - 40, `CLASE:  ${heroClassData.name}`, {
-      fontFamily: FONTS.PRIMARY, fontSize: "20px", color: "#f0c040", resolution: 2,
-    }).setOrigin(0, 0.5);
-    this._container.add(classTitle);
+    const avatarKey = heroClassData.avatarKey;
+    const hasAvatar = avatarKey && this.textures.exists(avatarKey);
 
-    const classDesc = this.add.text(cx - 260, classBoxY + 15, heroClassData.description, {
-      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#f0e6d3", wordWrap: { width: W - 130 }, lineSpacing: 6, resolution: 2,
-    }).setOrigin(0, 0.5);
-    this._container.add(classDesc);
+    if (hasAvatar) {
+      // Retrato marco con borde dorado
+      const portraitX = cx - 210;
+      const portraitY = classBoxY;
+      const portraitSize = 135;
+
+      const pFrame = this.add.rectangle(portraitX, portraitY, portraitSize + 6, portraitSize + 6, COLORS.BG_DARK, 1)
+        .setStrokeStyle(3, COLORS.GOLD);
+      this._container.add(pFrame);
+
+      const pImg = this.add.image(portraitX, portraitY, avatarKey);
+      pImg.setDisplaySize(portraitSize, portraitSize);
+      this._container.add(pImg);
+
+      // Título, Tag y Descripción a la derecha del retrato
+      const textLeft = cx - 125;
+      const textW = W - 250;
+
+      const classTitle = this.add.text(textLeft, classBoxY - 52, heroClassData.name, {
+        fontFamily: FONTS.PRIMARY, fontSize: "16px", color: "#f0c040", resolution: 2, wordWrap: { width: textW - 90 },
+      }).setOrigin(0, 0.5);
+      this._container.add(classTitle);
+
+      const bonusTag = this.add.text(cx + 260, classBoxY - 52, "[ 0 BONUS ]", {
+        fontFamily: FONTS.PRIMARY, fontSize: "11px", color: "#ff4444", resolution: 2,
+      }).setOrigin(1, 0.5);
+      this._container.add(bonusTag);
+
+      const classDesc = this.add.text(textLeft, classBoxY + 14, heroClassData.description, {
+        fontFamily: FONTS.PRIMARY, fontSize: "13px", color: "#f0e6d3", wordWrap: { width: textW }, lineSpacing: 5, resolution: 2,
+      }).setOrigin(0, 0.5);
+      this._container.add(classDesc);
+    } else {
+      const classTitle = this.add.text(cx - 260, classBoxY - 45, `CLASE:  ${heroClassData.name}`, {
+        fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#f0c040", resolution: 2,
+      }).setOrigin(0, 0.5);
+      this._container.add(classTitle);
+
+      const bonusTag = this.add.text(cx + 260, classBoxY - 45, "[ 0 BONUS DE STATS ]", {
+        fontFamily: FONTS.PRIMARY, fontSize: "12px", color: "#ff4444", resolution: 2,
+      }).setOrigin(1, 0.5);
+      this._container.add(bonusTag);
+
+      const classDesc = this.add.text(cx - 260, classBoxY + 15, heroClassData.description, {
+        fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#f0e6d3", wordWrap: { width: W - 130 }, lineSpacing: 6, resolution: 2,
+      }).setOrigin(0, 0.5);
+      this._container.add(classDesc);
+    }
 
     // ── SECCIÓN 3: ATRIBUTOS Y DICTAMEN DEL TRIBUNAL ─────────────────────────
     const statsBoxY = 550;

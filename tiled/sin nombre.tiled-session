@@ -24,10 +24,10 @@
                 2
             ],
             "scale": 1.79,
-            "selectedLayer": 1,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 349.72067039106145,
-                "y": 209.7765363128492
+                "x": 346.3687150837988,
+                "y": 215.92178770949718
             }
         }
     },
@@ -38,13 +38,12 @@
     "map.lastUsedFormat": "tmx",
     "map.width": 15,
     "openFiles": [
-        "nivel1.tmx",
-        "nivel1.json"
+        "nivel1.tmx"
     ],
     "project": "sin nombre.tiled-project",
     "recentFiles": [
-        "nivel1.json",
         "nivel1.tmx",
+        "nivel1.json",
         "dungeon_tiles.tsx"
     ],
     "tileset.lastUsedFormat": "tsx"

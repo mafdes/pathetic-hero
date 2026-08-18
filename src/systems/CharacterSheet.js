@@ -33,6 +33,17 @@ export class CharacterSheet {
 
     /** @type {string|null} Clave de clase seleccionada */
     this.characterClass = null;
+
+    /** @type {string|null} Arquetipo de la clase (mago, guerrero, etc.) */
+    this.archetype = null;
+  }
+
+  get heroClass() {
+    return this.characterClass;
+  }
+
+  set heroClass(val) {
+    this.characterClass = val;
   }
 
   /**
@@ -79,6 +90,7 @@ export class CharacterSheet {
       name: this.name,
       attributes: { ...this.attributes },
       characterClass: this.characterClass,
+      archetype: this.archetype,
     };
   }
 
@@ -88,10 +100,12 @@ export class CharacterSheet {
    */
   fromJSON(data) {
     if (!data) return;
-    this.name = data.name ?? "";
-    this.characterClass = data.characterClass ?? null;
+    const s = data.sheet ?? data;
+    this.name = s.name ?? "";
+    this.characterClass = s.characterClass ?? s.heroClass ?? null;
+    this.archetype = s.archetype ?? null;
     for (const attr of ALL_ATTRIBUTES) {
-      const val = data.attributes?.[attr];
+      const val = s.attributes?.[attr];
       this.attributes[attr] = typeof val === "number" ? val : null;
     }
   }
@@ -102,6 +116,7 @@ export class CharacterSheet {
   reset() {
     this.name = "";
     this.characterClass = null;
+    this.archetype = null;
     for (const attr of ALL_ATTRIBUTES) {
       this.attributes[attr] = null;
     }

@@ -34,7 +34,7 @@ export class CreditsScene extends Phaser.Scene {
 
     // Contenido de créditos
     const creditsText = [
-      { role: "🎨 ARTE DE COFRES, LLAVES Y MONEDAS", name: "Jan Schneider (itch.io)", link: "jan-schneider.itch.io/chest-and-coins" },
+      { role: "🎨 ARTE DE COFRES, LLAVES Y TRAMPAS", name: "Arte Original", link: "" },
       { role: "🎵 MÚSICA Y SFX RETRO 8-BIT", name: "OpenGameArt.org & Retro Audio", link: "opengameart.org" },
       { role: "🔤 TIPOGRAFÍA PIXEL ART", name: "Press Start 2P by CodeMan38", link: "fonts.google.com" },
       { role: "💡 PROTOTIPO E IDEA ORIGINAL", name: "heroic-failure (HTML5 Prototype)", link: "github.com/mafdes/heroic-failure" },
