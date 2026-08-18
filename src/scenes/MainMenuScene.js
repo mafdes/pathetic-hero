@@ -3,7 +3,7 @@
  */
 
 import * as Phaser from "phaser";
-import { COLORS, FONTS, FONT_SIZES, SCENES, TIMING, DEPTHS } from "../utils/constants.js";
+import { COLORS, FONTS, FONT_SIZES, SCENES, TIMING, DEPTHS, GAME_VERSION } from "../utils/constants.js";
 import { SaveManager } from "../systems/SaveManager.js";
 import { PixelButton } from "../ui/PixelButton.js";
 
@@ -110,10 +110,10 @@ export class MainMenuScene extends Phaser.Scene {
     devBtn.on("pointerdown", () => this._devJumpToDungeon());
 
     // ── Versión ───────────────────────────────────────────────────────────────
-    this.add.text(W / 2, H - 50, "v0.3.0 — Pathetic Hero", {
+    this.add.text(W / 2, H - 50, `${GAME_VERSION} — Pathetic Hero`, {
       fontFamily: FONTS.PRIMARY,
       fontSize: "20px",
-      color: "#3d3d6b",
+      color: "#d4a017",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
 

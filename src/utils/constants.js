@@ -6,6 +6,7 @@
 // 720×1280 es la resolución HD interna en orientación VERTICAL (Portrait 9:16).
 export const BASE_WIDTH = 720;
 export const BASE_HEIGHT = 1280;
+export const GAME_VERSION = "v0.3.1";
 
 // ─── Paleta de Colores ───────────────────────────────────────────────────────
 export const COLORS = {
