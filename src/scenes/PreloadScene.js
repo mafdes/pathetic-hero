@@ -18,7 +18,8 @@ export class PreloadScene extends Phaser.Scene {
     // ── Precargar Assets Dinámicos de Enemigos (Imágenes + Mapa) ───────────────
     EnemyAnimationManager.preloadEnemyAssets(this);
 
-    // ── Mapa de Tiled y Tileset (Carga los 8 niveles) ─────────────────────────
+    // ── Mapa de Tiled, Tileset y Fondos ───────────────────────────────────────
+    this.load.image("bg_combat", "assets/bg_combat.jpeg");
     this.load.image("dungeon_tiles", "assets/tilesets/dungeon_tiles.png");
     this.load.spritesheet("dungeon_tiles_sheet", "assets/tilesets/dungeon_tiles.png", { frameWidth: 32, frameHeight: 32 });
     

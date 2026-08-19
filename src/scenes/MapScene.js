@@ -7,6 +7,8 @@ import { SaveManager } from "../systems/SaveManager.js";
 import { CharacterSheet } from "../systems/CharacterSheet.js";
 import { getLevel } from "../data/levels.js";
 import { SoundFx } from "../systems/SoundFx.js";
+import { triggerHaptic, isTouchDevice } from "../utils/helpers.js";
+
 
 export class MapScene extends Phaser.Scene {
   constructor() {
@@ -295,6 +297,7 @@ export class MapScene extends Phaser.Scene {
           if (textureKey !== 'entity-goblin') {
             sprite.setDisplaySize(this.tileSize * 0.85, this.tileSize * 0.85);
             sprite.setOrigin(0.5, 0.5);
+            this._applyMapSpriteFloatTween(sprite);
           }
 
           let badge = null;
@@ -488,6 +491,7 @@ export class MapScene extends Phaser.Scene {
           if (textureKey !== 'entity-goblin') {
             sprite.setDisplaySize(this.tileSize * 0.85, this.tileSize * 0.85);
             sprite.setOrigin(0.5, 0.5);
+            this._applyMapSpriteFloatTween(sprite);
           }
 
           let badge = null;
@@ -587,6 +591,19 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
+  _applyMapSpriteFloatTween(sprite) {
+    if (!sprite) return;
+    this.tweens.add({
+      targets: sprite,
+      y: sprite.y - 6,
+      angle: { from: -4, to: 4 },
+      duration: 1000 + Math.random() * 300,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+  }
+
   _updateFlies() {
     if (!this.playerSprite || !this.flies) return;
     const px = this.playerSprite.x;
@@ -678,38 +695,70 @@ export class MapScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#f0c040", resolution: 2,
     }).setOrigin(1, 0).setAlpha(0);
 
-    // ── FOOTER: pista de control ──────────────────────────────────────────
+    // ── FOOTER: pista de control adaptativa ──────────────────────────────
     this.add.rectangle(cx, H - FH / 2, W, FH, 0x0e0814, 1);
     this.add.rectangle(cx, H - FH, W, 2, 0x3d2a5a, 1); // línea separadora
-    this.add.text(cx, H - FH / 2, "Toca en la dirección que quieres moverte", {
-      fontFamily: FONTS.PRIMARY, fontSize: "15px", color: "#6a4e8a", resolution: 2,
+    const hintMsg = isTouchDevice()
+      ? "Toca una casilla o mantén pulsada una dirección"
+      : "WASD / Flechas o Clic para moverte";
+
+    this.add.text(cx, H - FH / 2, hintMsg, {
+      fontFamily: FONTS.PRIMARY, fontSize: "14px", color: "#6a4e8a", resolution: 2,
     }).setOrigin(0.5);
 
-    // ── INPUT: tap-directional ────────────────────────────────────────────────
-    // El juego calcula en qué dirección tocas RELATIVA al jugador y da UN paso.
+    // ── Indicador sutil de toque para móviles (flecha semitransparente) ──────
+    this._touchIndicator = this.add.text(0, 0, "▲", {
+      fontFamily: FONTS.PRIMARY, fontSize: "20px", color: "#f0c040", resolution: 2,
+    }).setOrigin(0.5).setDepth(DEPTHS.UI + 10).setAlpha(0);
+
+    // ── INPUT: Tap corto vs Hold mantenido ─────────────────────────────────
+    this._pointerDownInfo = null;
+
     this.input.on("pointerdown", (pointer) => {
-      if (this.isMoving || this._dialogBox.isVisible()) return;
-
-      // Coordenadas del jugador en píxeles
-      const playerPx = this.offsetX + this.playerPos.x * this.tileSize + this.tileSize / 2;
-      const playerPy = this.offsetY + this.playerPos.y * this.tileSize + this.tileSize / 2;
-
-      const relX = pointer.x - playerPx;
-      const relY = pointer.y - playerPy;
-
-      // Ignorar si el toque está sobre el propio jugador
-      if (Math.abs(relX) < this.tileSize * 0.4 && Math.abs(relY) < this.tileSize * 0.4) return;
-
-      // Eje dominante → dirección de UN paso
-      let dx = 0, dy = 0;
-      if (Math.abs(relX) > Math.abs(relY)) {
-        dx = relX > 0 ? 1 : -1;
-      } else {
-        dy = relY > 0 ? 1 : -1;
-      }
-
-      this._tryMove(dx, dy);
+      this._pointerDownInfo = {
+        x: pointer.x,
+        y: pointer.y,
+        time: this.time.now,
+      };
     });
+
+    this.input.on("pointerup", (pointer) => {
+      this._hideTouchIndicator();
+
+      if (!this._pointerDownInfo) return;
+      const duration = this.time.now - this._pointerDownInfo.time;
+      const dist = Math.hypot(pointer.x - this._pointerDownInfo.x, pointer.y - this._pointerDownInfo.y);
+      this._pointerDownInfo = null;
+
+      // Si es un TAP CORTO (menos de 220ms y sin arrastre) ➔ Tap-to-Move con Pathfinding
+      if (duration < 220 && dist < 16) {
+        if (this.isMoving || this._dialogBox.isVisible()) return;
+
+        const targetC = Math.floor((pointer.x - this.offsetX) / this.tileSize);
+        const targetR = Math.floor((pointer.y - this.offsetY) / this.tileSize);
+
+        if (targetC >= 0 && targetC < this.cols && targetR >= 0 && targetR < this.rows) {
+          const path = this._findPath(this.playerPos.x, this.playerPos.y, targetC, targetR);
+          if (path && path.length > 0) {
+            triggerHaptic(10);
+            this._walkPath(path);
+          }
+        }
+      }
+    });
+  }
+
+  _showTouchIndicator(px, py, dx, dy) {
+    if (!this._touchIndicator) return;
+    this._touchIndicator.setPosition(px, py).setAlpha(0.65);
+    if (dx === 1)       this._touchIndicator.setAngle(90);
+    else if (dx === -1) this._touchIndicator.setAngle(-90);
+    else if (dy === 1)  this._touchIndicator.setAngle(180);
+    else if (dy === -1) this._touchIndicator.setAngle(0);
+  }
+
+  _hideTouchIndicator() {
+    if (this._touchIndicator) this._touchIndicator.setAlpha(0);
   }
 
   _findPath(startC, startR, targetC, targetR) {
@@ -778,16 +827,52 @@ export class MapScene extends Phaser.Scene {
   update() {
     if (this.isMoving || this._dialogBox.isVisible()) return;
 
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.left) || Phaser.Input.Keyboard.JustDown(this.wasd.left)) {
+    // 1. Movimiento continuo por TECLADO (mantenido)
+    if (this.cursors.left.isDown || this.wasd.left.isDown) {
       this._tryMove(-1, 0);
-    } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right) || Phaser.Input.Keyboard.JustDown(this.wasd.right)) {
+      return;
+    }
+    if (this.cursors.right.isDown || this.wasd.right.isDown) {
       this._tryMove(1, 0);
-    } else if (Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.wasd.up)) {
+      return;
+    }
+    if (this.cursors.up.isDown || this.wasd.up.isDown) {
       this._tryMove(0, -1);
-    } else if (Phaser.Input.Keyboard.JustDown(this.cursors.down) || Phaser.Input.Keyboard.JustDown(this.wasd.down)) {
+      return;
+    }
+    if (this.cursors.down.isDown || this.wasd.down.isDown) {
       this._tryMove(0, 1);
+      return;
+    }
+
+    // 2. Movimiento continuo por TÁCTIL / RATÓN MANTENIDO (Hold-to-Move)
+    const pointer = this.input.activePointer;
+    if (pointer && pointer.isDown && this._pointerDownInfo) {
+      const holdTime = this.time.now - this._pointerDownInfo.time;
+      if (holdTime > 180) { // Si lleva más de 180ms presionado, es Hold
+        const playerPx = this.offsetX + this.playerPos.x * this.tileSize + this.tileSize / 2;
+        const playerPy = this.offsetY + this.playerPos.y * this.tileSize + this.tileSize / 2;
+
+        const relX = pointer.x - playerPx;
+        const relY = pointer.y - playerPy;
+
+        if (Math.abs(relX) > this.tileSize * 0.35 || Math.abs(relY) > this.tileSize * 0.35) {
+          let dx = 0, dy = 0;
+          if (Math.abs(relX) > Math.abs(relY)) {
+            dx = relX > 0 ? 1 : -1;
+          } else {
+            dy = relY > 0 ? 1 : -1;
+          }
+
+          this._showTouchIndicator(pointer.x, pointer.y, dx, dy);
+          this._tryMove(dx, dy);
+        }
+      }
+    } else {
+      this._hideTouchIndicator();
     }
   }
+
 
   _tryMove(dx, dy) {
     const nc = this.playerPos.x + dx;
@@ -818,15 +903,18 @@ export class MapScene extends Phaser.Scene {
       targets: this.playerSprite,
       x: tx,
       y: ty,
-      duration: 120,
+      duration: 160,
       onComplete: () => {
-        this.isMoving = false;
-        this._updateUI();
-        this._updateFogOfWar();
-        if (callback) callback();
+        this.time.delayedCall(40, () => {
+          this.isMoving = false;
+          this._updateUI();
+          this._updateFogOfWar();
+          if (callback) callback();
+        });
       }
     });
   }
+
 
   _handleInteraction(ent, c, r) {
     // ── Encuentro (multi-enemigo, datos desde levels.js) ─────────────────────
@@ -865,6 +953,7 @@ export class MapScene extends Phaser.Scene {
     if (ent.type === 'key') {
       // Recoger la llave
       SoundFx.playKey();
+      triggerHaptic(15);
       this.playerInventory.keys += 1;
       delete this.entities[`${c},${r}`];
       if (ent.sprite) ent.sprite.destroy();
@@ -889,6 +978,7 @@ export class MapScene extends Phaser.Scene {
       if (this.playerInventory.keys > 0) {
         // Consumir la llave y abrir la puerta
         SoundFx.playDoor();
+        triggerHaptic(20);
         this.playerInventory.keys -= 1;
         if (this.playerInventory.keys === 0) this._keyHudIcon.setAlpha(0);
 
@@ -902,6 +992,7 @@ export class MapScene extends Phaser.Scene {
           "Puerta desbloqueada"
         );
       } else {
+        triggerHaptic(10);
         this._dialogBox.show(
           "La puerta está cerrada con llave.\n\nBusca la llave en algún lugar de la mazmorra.",
           null,
@@ -913,6 +1004,7 @@ export class MapScene extends Phaser.Scene {
 
     if (ent.type === 'trap') {
       SoundFx.playTrap();
+      triggerHaptic(30);
       const passed = this.playerStats.checkAttribute('dexterity', 12);
       delete this.entities[`${c},${r}`];
       if (ent.sprite) ent.sprite.destroy();
@@ -936,6 +1028,7 @@ export class MapScene extends Phaser.Scene {
       }
       return;
     }
+
 
     if (ent.type === 'rune') {
       SoundFx.playFountain();

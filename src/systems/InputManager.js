@@ -124,6 +124,23 @@ export class InputManager {
     return this.keys.action.isDown;
   }
 
+  /** Devuelve la pista de control para pruebas de acción (ej. Destreza) */
+  get actionHintText() {
+    return isTouchDevice() ? "[ TOCA LA PANTALLA ]" : "[ ESPACIO / CLIC ]";
+  }
+
+  /** Devuelve la pista de control para movimiento en mapas */
+  get movementHintText() {
+    return isTouchDevice()
+      ? "Toca o mantén pulsada una dirección"
+      : "WASD / Flechas o Clic para moverte";
+  }
+
+  /** Devuelve true si el entorno actual es táctil */
+  get isTouch() {
+    return isTouchDevice();
+  }
+
   /** Cambia el modo de input en caliente (cuando el usuario cambia en Opciones). */
   setMode(mode) {
     this.mode = mode;
@@ -141,3 +158,4 @@ export class InputManager {
     }
   }
 }
+

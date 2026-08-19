@@ -85,3 +85,17 @@ export function getVerdict(score) {
   if (score <= 19) return "SOBRESALIENTE";
   return "PERFECTO (SOSPECHOSO)";
 }
+
+/**
+ * Lanza una micro-vibración háptica en dispositivos móviles compatibles.
+ */
+export function triggerHaptic(ms = 12) {
+  if (typeof navigator !== "undefined" && navigator.vibrate) {
+    try {
+      navigator.vibrate(ms);
+    } catch (_) {
+      // Ignorar si el navegador bloquea la vibración
+    }
+  }
+}
+

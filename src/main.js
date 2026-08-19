@@ -4,7 +4,7 @@
  */
 
 import * as Phaser from "phaser";
-import { BASE_WIDTH, BASE_HEIGHT } from "./utils/constants.js";
+import { BASE_WIDTH, BASE_HEIGHT, GAME_VERSION } from "./utils/constants.js";
 import { BootScene } from "./scenes/BootScene.js";
 import { PreloadScene } from "./scenes/PreloadScene.js";
 import { IntroScene } from "./scenes/IntroScene.js";
@@ -25,13 +25,13 @@ import { CombatScene } from "./scenes/CombatScene.js";
 import { CreditsScene } from "./scenes/CreditsScene.js";
 
 const BUILD_INFO = {
-  version: "0.3.0",
+  version: GAME_VERSION,
   buildTime: new Date().toLocaleTimeString(),
   buildDate: new Date().toISOString().slice(0, 10),
 };
 
 console.log(
-  `%c 🗡️ PATHETIC HERO v${BUILD_INFO.version} %c Build: ${BUILD_INFO.buildDate} ${BUILD_INFO.buildTime} %c`,
+  `%c 🗡️ PATHETIC HERO ${BUILD_INFO.version} %c Build: ${BUILD_INFO.buildDate} ${BUILD_INFO.buildTime} %c`,
   "background: #1a0a2e; color: #f0c040; font-weight: bold; font-size: 13px; padding: 4px 8px; border-radius: 4px 0 0 4px;",
   "background: #d4a017; color: #1a0a2e; font-weight: bold; font-size: 13px; padding: 4px 8px; border-radius: 0 4px 4px 0;",
   "background: transparent;"

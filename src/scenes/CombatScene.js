@@ -77,15 +77,36 @@ export class CombatScene extends Phaser.Scene {
     const H  = this.scale.height;
     const cx = W / 2;
 
-    // ── FONDO ARENA ──────────────────────────────────────────────────────
-    const bg = this.add.graphics();
-    bg.fillStyle(0x0e0814, 1);
-    bg.fillRect(0, 0, W, H);
-    bg.fillStyle(0x1a1030, 0.5);
-    bg.fillRect(0, H * 0.55, W, H * 0.45);
+    // ── FONDO ARENA (Restringido solo a la ventana de la arena) ───────────
+    const arenaY = 125;
+    const arenaH = 555;
 
-    bg.lineStyle(2, C.BORDER, 0.3);
-    bg.lineBetween(40, H * 0.58, W - 40, H * 0.58);
+    if (this.textures.exists("bg_combat")) {
+      const bgImage = this.add.image(cx, arenaY + arenaH / 2, "bg_combat");
+      bgImage.setDisplaySize(W, arenaH);
+      bgImage.setDepth(DEPTHS.BG);
+
+      // Máscara para que el fondo NO tape ni se meta detrás de la UI superior o inferior
+      const maskGfx = this.make.graphics();
+      maskGfx.fillStyle(0xffffff);
+      maskGfx.fillRect(0, arenaY, W, arenaH);
+      bgImage.setMask(maskGfx.createGeometryMask());
+
+      // Líneas divisorias sobrias para enmarcar la arena
+      const border = this.add.graphics();
+      border.lineStyle(2, C.BORDER, 0.5);
+      border.lineBetween(0, arenaY, W, arenaY);
+      border.lineBetween(0, arenaY + arenaH, W, arenaY + arenaH);
+    } else {
+      const bg = this.add.graphics();
+      bg.fillStyle(0x0e0814, 1);
+      bg.fillRect(0, 0, W, H);
+      bg.fillStyle(0x1a1030, 0.5);
+      bg.fillRect(0, arenaY, W, arenaH);
+
+      bg.lineStyle(2, C.BORDER, 0.3);
+      bg.lineBetween(40, H * 0.58, W - 40, H * 0.58);
+    }
 
     // ── HUD ENEMIGO ───────────────────────────────────────────────────────
     const enemyPanelH = 90;
@@ -121,8 +142,9 @@ export class CombatScene extends Phaser.Scene {
 
     // ── SPRITES ENEMIGOS EN ARENA ──────────────────────────────────────────
     const ex = cx;
-    const ey = H * 0.40;
-    this._enemyShadow = this.add.ellipse(ex, ey, 160, 40, 0x000000, 0.4);
+    const ey = H * 0.44;
+    // Sombra ovalada posicionada exactamente en el plano del suelo bajo las suelas
+    this._enemyShadow = this.add.ellipse(ex, ey + 2, 165, 28, 0x000000, 0.45);
     const enemyKey = (this.enemyData.key || 'goblin').replace('_alpha', '');
     this._enemyGfx = EnemyAnimationManager.createEnemySprite(this, ex, ey, enemyKey);
     this._enemyGfx.setDisplaySize(260, 260);
@@ -576,6 +598,8 @@ export class CombatScene extends Phaser.Scene {
   _startEnemyIdleAnimation() {
     if (this._idleTween) this._idleTween.remove();
     if (!this._enemyGfx || !this._enemyGfx.active) return;
+    // Si la animación por fotogramas reales (stand01/stand02) ya está activa, no estirar/subir sintéticamente
+    if (this._enemyGfx.anims && this._enemyGfx.anims.isPlaying) return;
 
     const baseY = this._enemySpriteY ?? (this._enemyGfx.y || 400);
     const baseW = 260;

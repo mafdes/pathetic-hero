@@ -8,7 +8,8 @@ import {
   COLORS, FONTS, SCENES, TIMING, DEPTHS, CHALLENGES,
 } from "../../utils/constants.js";
 import { DialogBox } from "../../ui/DialogBox.js";
-import { getVerdict } from "../../utils/helpers.js";
+import { getVerdict, isTouchDevice, triggerHaptic } from "../../utils/helpers.js";
+
 
 const FAIL_COMMENTS = [
   "Impresionante. Incluso los ciegos lo hacen mejor.",
@@ -146,10 +147,7 @@ export class DexterityScene extends Phaser.Scene {
       fontFamily: FONTS.PRIMARY, fontSize: "18px", color: "#6a4e8a", resolution: 2,
     }).setOrigin(0, 0.5).setDepth(DEPTHS.UI);
 
-    const inputMode = this.registry.get("inputMode") ?? "keyboard";
-    let hintText = "[ ESPACIO ]";
-    if (inputMode === "mouse") hintText = "[ CLICK IZQUIERDO ]";
-    else if (inputMode === "touch") hintText = "[ TOCA LA PANTALLA ]";
+    const hintText = isTouchDevice() ? "[ TOCA LA PANTALLA ]" : "[ ESPACIO / CLIC ]";
 
     this.add.text(W / 2, barY + 80, hintText, {
       fontFamily: FONTS.PRIMARY,
@@ -157,6 +155,7 @@ export class DexterityScene extends Phaser.Scene {
       color: "#5a5a8a",
       resolution: 2,
     }).setOrigin(0.5).setDepth(DEPTHS.UI);
+
 
     // Telón oscuro CASI NEGRO para tapar la prueba en la cuenta atrás
     this._coverPanel = this.add.rectangle(W / 2, H / 2, W, H, 0x0d0613, 0.98)
@@ -493,9 +492,11 @@ export class DexterityScene extends Phaser.Scene {
 
   _onAction() {
     if (!this._alive || this._inputCooldown || this._inCountdown) return;
+    triggerHaptic(15);
     this._inputCooldown = true;
     this._showFeedback(this._isInGoldZone());
   }
+
 
   _isInGoldZone() {
     if (!this._goldZone.visible) return false;
